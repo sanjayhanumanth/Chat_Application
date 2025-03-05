@@ -21,4 +21,5 @@ public class ChatMessageService {
     public List<ChatMessage> getChatHistory() {
         return chatMessageRepository.findAllByOrderByTimestampAsc();
     }
+    ///gg
 }
