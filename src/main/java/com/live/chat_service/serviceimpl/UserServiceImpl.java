@@ -61,7 +61,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public SuccessResponse<Object> editProfile(EditProfileDto editProfileDto, MultipartFile imageFile) throws IOException {
+    public SuccessResponse<Object> editProfile(MultipartFile imageFile) throws IOException {
         SuccessResponse<Object> successResponse=new SuccessResponse<>();
         Long userId = UserContextHolder.getUserTokenDto().getId();
         Optional<User> userOptional = userRepository.findByIdIsActive(userId);
@@ -71,7 +71,6 @@ public class UserServiceImpl implements UserService {
                 byte[] imageBytes = imageFile.getBytes();
                 user.setImage(imageBytes);
             }
-            user.setUserName(editProfileDto.getUserName());
             userRepository.save(user);
         }
         return successResponse;

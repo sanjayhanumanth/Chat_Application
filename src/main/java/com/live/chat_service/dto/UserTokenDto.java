@@ -11,17 +11,18 @@ public class UserTokenDto {
     private String email;
     private String username;
     private String sub;
+    private String role;
     private long iat;
     private long exp;
-
 
     @Override
     public String toString() {
         return "UserTokenDto{" +
                 "id=" + id +
-                ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
+                ", username='" + username + '\'' +
                 ", sub='" + sub + '\'' +
+                ", role='" + role + '\'' +
                 ", iat=" + iat +
                 ", exp=" + exp +
                 '}';

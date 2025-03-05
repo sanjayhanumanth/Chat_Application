@@ -12,5 +12,5 @@ import java.io.IOException;
 public interface UserService {
     SuccessResponse<Object> userRegister(UserDto userDto);
 
-    SuccessResponse<Object> editProfile(EditProfileDto editProfileDto, MultipartFile imageFile) throws IOException;
+    SuccessResponse<Object> editProfile(MultipartFile imageFile) throws IOException;
 }
