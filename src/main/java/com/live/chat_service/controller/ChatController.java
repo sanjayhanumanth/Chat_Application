@@ -1,11 +1,15 @@
 package com.live.chat_service.controller;
+import com.live.chat_service.dto.ChatDTO;
 import com.live.chat_service.model.ChatMessage;
+import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.service.ChatMessageService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
@@ -22,6 +26,11 @@ public class ChatController {
     @SendTo("/topic/messages") // Broadcast messages
     public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
         return chatMessageService.saveMessage(chatMessage);
+    }
+
+    @GetMapping("/messages")
+    public SuccessResponse<List<ChatDTO>> getChatMessages(@RequestParam Long senderId, @RequestParam Long receiverId) {
+        return chatMessageService.getChatMessages(senderId, receiverId);
     }
 }
 
