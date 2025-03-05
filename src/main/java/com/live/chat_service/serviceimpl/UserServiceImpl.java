@@ -3,6 +3,7 @@ package com.live.chat_service.serviceimpl;
 import com.live.chat_service.dto.EditProfileDto;
 import com.live.chat_service.dto.LoginDto;
 import com.live.chat_service.dto.UserDto;
+import com.live.chat_service.dto.UserListDTO;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.Role;
 import com.live.chat_service.model.User;
@@ -18,8 +19,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
-//88
+import java.util.stream.Collectors;
+
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -74,6 +77,32 @@ public class UserServiceImpl implements UserService {
             user.setUserName(editProfileDto.getUserName());
             userRepository.save(user);
         }
+        return successResponse;
+    }
+
+    @Override
+    public SuccessResponse<List<UserListDTO>> getUserList() {
+        SuccessResponse<List<UserListDTO>> successResponse = new SuccessResponse<>();
+
+        List<User> userList = userRepository.findAllIsActive();
+
+        if (!userList.isEmpty()) {
+            List<UserListDTO> userDTOList = userList.stream().map(user -> {
+                UserListDTO dto = new UserListDTO();
+                dto.setId(user.getId());
+                dto.setName(user.getUserName());
+                dto.setEmail(user.getEmailId());
+                dto.setRoleId(user.getRole().getId());
+                dto.setImage(user.getImage());
+                return dto;
+            }).collect(Collectors.toList());
+
+            successResponse.setData(userDTOList);
+            successResponse.setStatusMessage("Users fetched successfully.");
+        } else {
+            successResponse.setStatusMessage("No users found.");
+        }
+
         return successResponse;
     }
 

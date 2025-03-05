@@ -6,20 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@Transactional
-public class ChatMessageService {
-    private final ChatMessageRepository chatMessageRepository;
+public interface ChatMessageService {
 
-    public ChatMessageService(ChatMessageRepository chatMessageRepository) {
-        this.chatMessageRepository = chatMessageRepository;
-    }
-
-    public ChatMessage saveMessage(ChatMessage chatMessage) {
-        return chatMessageRepository.save(chatMessage);
-    }
-
-    public List<ChatMessage> getChatHistory() {
-        return chatMessageRepository.findAllByOrderByTimestampAsc();
-    }
-    ///gg
+    ChatMessage saveMessage(ChatMessage chatMessage);
 }

@@ -23,10 +23,5 @@ public class ChatController {
     public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
         return chatMessageService.saveMessage(chatMessage);
     }
-
-    @GetMapping("/history")
-    public List<ChatMessage> getChatHistory() {
-        return chatMessageService.getChatHistory();
-    }
 }
 
