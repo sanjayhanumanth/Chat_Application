@@ -80,10 +80,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public SuccessResponse<List<UserListDTO>> getUserList() {
+    public SuccessResponse<List<UserListDTO>> getUserList(String search) {
         SuccessResponse<List<UserListDTO>> successResponse = new SuccessResponse<>();
+        List<User> userList;
+        if(search==null)
+        {
+            userList = userRepository.findAllIsActive();
 
-        List<User> userList = userRepository.findAllIsActive();
+        }
+        else {
+            userList=userRepository.findByName(search);
+        }
 
         if (!userList.isEmpty()) {
             List<UserListDTO> userDTOList = userList.stream().map(user -> {

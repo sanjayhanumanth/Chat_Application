@@ -7,12 +7,7 @@ import com.live.chat_service.dto.UserListDTO;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.service.UserService;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -40,7 +35,7 @@ public class UserController {
     }
 
     @GetMapping("/userList")
-    public SuccessResponse<List<UserListDTO>> getUserList(){
-        return service.getUserList();
+    public SuccessResponse<List<UserListDTO>> getUserList(@RequestParam(required = false) String search){
+        return service.getUserList(search);
     }
 }

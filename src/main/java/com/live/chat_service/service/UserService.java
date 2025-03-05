@@ -14,6 +14,6 @@ import java.util.List;
 public interface UserService {
     SuccessResponse<Object> userRegister(UserDto userDto);
 
-    SuccessResponse<List<UserListDTO>> getUserList();
+    SuccessResponse<List<UserListDTO>> getUserList(String search);
     SuccessResponse<Object> editProfile(MultipartFile imageFile) throws IOException;
 }
