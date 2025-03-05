@@ -110,7 +110,7 @@ private static final String SECRET_KEY = "coherent";
 
     public boolean validateTokenId(String token, UserDetails userDetails) {
         final String email = extractUsername(token);
-        return (email.equals(userDetails.getUsername()) );
+        return (email.equals(userDetails.getUsername()));
     }
 
     private boolean isTokenExpired(String token) {
