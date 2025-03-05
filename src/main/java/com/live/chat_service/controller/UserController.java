@@ -30,7 +30,7 @@ public class UserController {
     }
 
     @PostMapping(value = "/editProfile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public SuccessResponse<Object> editProfile(@RequestPart(value = "image", required = false) MultipartFile imageFile) throws IOException {
+    public SuccessResponse<Object> editProfile(@RequestPart(value = "image") MultipartFile imageFile) throws IOException {
         return service.editProfile(imageFile);
     }
 
