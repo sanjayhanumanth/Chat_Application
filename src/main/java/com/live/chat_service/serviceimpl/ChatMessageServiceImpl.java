@@ -1,8 +1,12 @@
 package com.live.chat_service.serviceimpl;
 
 import com.live.chat_service.dto.ChatDTO;
+import com.live.chat_service.dto.MessageDto;
+import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.ChatMessage;
+import com.live.chat_service.model.User;
 import com.live.chat_service.repository.ChatMessageRepository;
+import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.service.ChatMessageService;
 import org.springframework.stereotype.Service;
@@ -16,17 +20,28 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
 
-    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository) {
+    private final UserRepository userRepository;
+
+    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository, UserRepository userRepository) {
         this.chatMessageRepository = chatMessageRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
-    public ChatMessage saveMessage(ChatMessage chatMessage) {
-        if (chatMessage.getSender() == null || chatMessage.getReceiver() == null || chatMessage.getContent().isEmpty()) {
-            throw new IllegalArgumentException("Invalid message data: Sender, Receiver, and Content must be provided.");
-        }
+    public MessageDto saveMessage(MessageDto messageDto) {
+        User user=userRepository.findByIdIsActive(messageDto.getReceiverId()).
+                orElseThrow(() -> new CustomValidationExceptions("Receiver not found with id: " + messageDto.getReceiverId()));
+        User user1=userRepository.findByIdIsActive(messageDto.getSenderId()).
+                orElseThrow(() -> new CustomValidationExceptions("Sender not found with id: " + messageDto.getSenderId()));;
+        ChatMessage chatMessage=new ChatMessage();
+        chatMessage.setReceiver(user);
+        chatMessage.setSender(user1);
+        chatMessage.setContent(messageDto.getContent());
         chatMessage.setTimestamp(LocalDateTime.now());
-        return chatMessageRepository.save(chatMessage);
+        chatMessageRepository.save(chatMessage);
+        messageDto.setId(chatMessage.getId());
+        messageDto.setTimestamp(chatMessage.getTimestamp() );
+        return messageDto;
     }
 
     @Override
