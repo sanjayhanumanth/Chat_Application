@@ -1,5 +1,4 @@
 package com.live.chat_service.controller;
-import com.live.chat_service.dto.ChatDTO;
 import com.live.chat_service.dto.MessageDto;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.service.ChatMessageService;
@@ -28,7 +27,7 @@ public class ChatController {
     }
 
     @GetMapping("/messages")
-    public SuccessResponse<List<ChatDTO>> getChatMessages(@RequestParam Long senderId, @RequestParam Long receiverId) {
+    public SuccessResponse<List<MessageDto>> getChatMessages(@RequestParam Long senderId, @RequestParam Long receiverId) {
         return chatMessageService.getChatMessages(senderId, receiverId);
     }
 }
