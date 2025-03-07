@@ -46,7 +46,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     @Override
     public SuccessResponse<List<MessageDto>> getChatMessages(Long senderId, Long receiverId) {
         SuccessResponse<List<MessageDto>> successResponse = new SuccessResponse<>();
-        List<ChatMessage> chatMessages = chatMessageRepository.findBySenderIdAndReceiverIdOrderByTimestampAsc(senderId, receiverId);
+        List<ChatMessage> chatMessages = chatMessageRepository.findBySenderReceiverId(senderId, receiverId);
        List<MessageDto> messageDtos = new ArrayList<>();
         for (ChatMessage chat : chatMessages){
             MessageDto messageDto = new MessageDto();
