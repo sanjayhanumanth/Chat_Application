@@ -79,11 +79,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public SuccessResponse<Object> getUser() {
+    public SuccessResponse<Object> getUser(Long id) {
         SuccessResponse<Object> successResponse=new SuccessResponse<>();
-        Long userId = UserContextHolder.getUserTokenDto().getId();
 
-        Optional<User> userOptional=userRepository.findByIdIsActive(userId);
+        Optional<User> userOptional=userRepository.findByIdIsActive(id);
         UserGetDTO userListDTO=new UserGetDTO();
 
         if(userOptional.isPresent())

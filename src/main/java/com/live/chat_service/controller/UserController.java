@@ -41,9 +41,9 @@ public class UserController {
     }
 
     @GetMapping("/getUser")
-    public SuccessResponse<Object> getUser()
+    public SuccessResponse<Object> getUser(@RequestParam Long id)
     {
-        return service.getUser();
+        return service.getUser(id);
     }
 
     @PutMapping("/editUser")
