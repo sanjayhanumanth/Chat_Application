@@ -28,8 +28,5 @@ public class AuthController {
 
 
 
-    @PostMapping("/refreshToken")
-    public Map<String, String> refreshToken(@RequestParam("accessToken") String accessToken) {
-        return jwtUtil.refreshToken(accessToken);
-    }
+
 }
