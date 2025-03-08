@@ -1,9 +1,7 @@
 package com.live.chat_service.serviceimpl;
 
-import com.live.chat_service.dto.EditProfileDto;
-import com.live.chat_service.dto.LoginDto;
-import com.live.chat_service.dto.UserDto;
-import com.live.chat_service.dto.UserListDTO;
+import com.live.chat_service.dto.*;
+import com.live.chat_service.exception.CustomExceptionHandler;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.Role;
 import com.live.chat_service.model.User;
@@ -25,15 +23,14 @@ import java.util.stream.Collectors;
 
 
 @Service
-public class
-
-UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
 
     private final RoleRepository roleRepository;
+
 
     public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
         this.userRepository = userRepository;
@@ -79,6 +76,64 @@ UserServiceImpl implements UserService {
             userRepository.save(user);
         }
         return successResponse;
+    }
+
+    @Override
+    public SuccessResponse<Object> getUser() {
+        SuccessResponse<Object> successResponse=new SuccessResponse<>();
+        Long userId = UserContextHolder.getUserTokenDto().getId();
+
+        Optional<User> userOptional=userRepository.findByIdIsActive(userId);
+        UserGetDTO userListDTO=new UserGetDTO();
+
+        if(userOptional.isPresent())
+        {
+            User user=userOptional.get();
+            userListDTO.setId(user.getId());
+            userListDTO.setUserName(user.getUserName());
+            userListDTO.setRoleId(user.getRole().getId());
+            userListDTO.setUserMail(user.getEmailId());
+            userListDTO.setImage(user.getImage());
+            userListDTO.setPhoneNumber(user.getPhoneNumber());
+            userListDTO.setTitle(user.getTitle());
+            userListDTO.setDisplayName(user.getDisplayName());
+            userListDTO.setStatus(user.getStatus());
+
+        }
+        else {
+            throw new CustomValidationExceptions("Invalid Id");
+        }
+        successResponse.setData(userListDTO);
+        successResponse.setStatusMessage("Success");
+        return successResponse;
+
+    }
+
+    @Override
+    public SuccessResponse<Object> editUser(UserEditDTO userEditDTO) {
+        SuccessResponse<Object> successResponse=new SuccessResponse<>();
+        Long userId = UserContextHolder.getUserTokenDto().getId();
+        Optional<User> userOptional=userRepository.findByIdIsActive(userId);
+        User user;
+        if(userOptional.isPresent())
+        {
+            user=userOptional.get();
+            user.setEmailId(userEditDTO.getUserMail());
+            user.setUserName(userEditDTO.getUserName());
+            user.setDisplayName(userEditDTO.getDisplayName());
+            user.setTitle(userEditDTO.getTitle());
+            user.setPhoneNumber(userEditDTO.getPhoneNumber());
+            user.setStatus(userEditDTO.getStatus());
+        }
+        else {
+            throw new CustomValidationExceptions("Invalid Id");
+        }
+        userRepository.save(user);
+        successResponse.setStatusMessage("Success");
+        successResponse.setStatusCode(200);
+        return successResponse;
+
+
     }
 
     @Override
