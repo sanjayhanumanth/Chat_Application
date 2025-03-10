@@ -1,5 +1,7 @@
 package com.live.chat_service.serviceimpl;
 
+import com.live.chat_service.constant.Constant;
+import com.live.chat_service.dto.EditMessageDTO;
 import com.live.chat_service.dto.MessageDto;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.ChatMessage;
@@ -7,12 +9,15 @@ import com.live.chat_service.model.User;
 import com.live.chat_service.repository.ChatMessageRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.response.SuccessResponse;
+import com.live.chat_service.response.UserContextHolder;
 import com.live.chat_service.service.ChatMessageService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class ChatMessageServiceImpl implements ChatMessageService {
@@ -60,6 +65,26 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         }
         successResponse.setData(messageDtos);
         return successResponse;
+    }
 
+    @Override
+    public SuccessResponse<Object> editMessages(EditMessageDTO editMessageDTO) {
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
+        Long userId = UserContextHolder.getUserTokenDto().getId();
+        Optional<ChatMessage> message = chatMessageRepository.findById(editMessageDTO.getMessageId());
+        if(message.isPresent() && Objects.equals(message.get().getSender().getId(), userId)){
+            ChatMessage chatMessage = message.get();
+            LocalDateTime tenMinutesAgo = LocalDateTime.now().minusMinutes(10);
+            if (chatMessage.getTimestamp().isBefore(tenMinutesAgo)) {
+                throw new CustomValidationExceptions(Constant.EDITED_TIME_EXCEEDED);
+            }
+            chatMessage.setContent(editMessageDTO.getContent());
+            chatMessageRepository.save(chatMessage);
+        }
+        else {
+            throw new CustomValidationExceptions(Constant.MESSAGE_NOT_FOUND);
+        }
+        successResponse.setStatusMessage(Constant.MESSAGE_UPDATED);
+        return successResponse;
     }
 }

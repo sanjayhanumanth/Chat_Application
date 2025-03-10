@@ -16,6 +16,10 @@ public class Constant {
 
     public static final long REFRESH_TOKEN_EXPIRATION = 24 * 60 * 60 * 1000;
 
+    public static final String MESSAGE_NOT_FOUND = "Message Not found";
+
+    public static final String MESSAGE_UPDATED = "Message Updated Successfully";
+
     public static final String OTP_VERIFIED ="OTP Verified Successfully";
 
     public static final String INVALID_OTP ="Enter Valid OTP";
@@ -36,4 +40,5 @@ public class Constant {
 
     public static final String PASSWORD_UPDATED = "User Password Updated Successfully";
 
+    public static final String EDITED_TIME_EXCEEDED = "Message Edited time Exceeded";
 }

@@ -1,7 +1,6 @@
 package com.live.chat_service.serviceimpl;
 
 import com.live.chat_service.dto.*;
-import com.live.chat_service.exception.CustomExceptionHandler;
 import com.live.chat_service.constant.Constant;
 import com.live.chat_service.dto.LoginDto;
 import com.live.chat_service.dto.UserDto;
@@ -85,7 +84,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public SuccessResponse<Object> editProfile(MultipartFile imageFile) throws IOException {
+    public SuccessResponse<Object> editProfile(MultipartFile imageFile, MultipartFile coverImage) throws IOException {
         SuccessResponse<Object> successResponse = new SuccessResponse<>();
         Long userId = UserContextHolder.getUserTokenDto().getId();
         Optional<User> userOptional = userRepository.findByIdIsActive(userId);
@@ -94,6 +93,10 @@ public class UserServiceImpl implements UserService {
             if (imageFile != null && !imageFile.isEmpty()) {
                 byte[] imageBytes = imageFile.getBytes();
                 user.setImage(imageBytes);
+            }
+            if (coverImage != null && !coverImage.isEmpty()) {
+                byte[] coverBytes = coverImage.getBytes();
+                user.setCoverImage(coverBytes);
             }
             userRepository.save(user);
         }
