@@ -7,6 +7,7 @@ import com.live.chat_service.dto.UserDto;
 import com.live.chat_service.dto.UserListDTO;
 import com.live.chat_service.dto.UserOtpValidationDto;
 import com.live.chat_service.exception.CustomValidationExceptions;
+import com.live.chat_service.model.ChatMessage;
 import com.live.chat_service.model.Role;
 import com.live.chat_service.model.User;
 import com.live.chat_service.model.UserValidation;
@@ -266,8 +267,16 @@ public class UserServiceImpl implements UserService {
                 dto.setDisplayName(user.getDisplayName());
                 dto.setPhoneNumber(user.getPhoneNumber());
                 dto.setTitle(user.getTitle());
-                Long unreadCount = chatMessageRepository.countBySenderAndReceiverAndReadFlagFalse(dto.getId(), userId);
+                Long unreadCount = chatMessageRepository.countBySenderIdAndReceiverIdAndReadFlagFalse(dto.getId(), userId);
+                Optional<ChatMessage> chatMessageOptional=chatMessageRepository.findLastMessage(dto.getId(),userId);
+                if(chatMessageOptional.isPresent())
+                {
+                    dto.setMessage(chatMessageOptional.get().getContent());
+                    dto.setLastMessageDateTime(String.valueOf(chatMessageOptional.get().getTimestamp()));
+                }
+
                 dto.setCount(unreadCount);
+
                 return dto;
             }).collect(Collectors.toList());
 

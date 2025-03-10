@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
@@ -24,7 +25,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             "timestamp ASC")
     List<ChatMessage> findByNonReadMessage(Long senderId, Long receiverId);
 
-  @Query(value = "SELECT count(content) from chat_message where receiver_id=:receiverId and sender_id=:senderId and read_flag =false",nativeQuery = true)
-    Long countBySenderAndReceiverAndReadFlagFalse(Long senderId, Long receiverId);
+    Long countBySenderIdAndReceiverIdAndReadFlagFalse(Long senderId, Long receiverId);
 
+
+    @Query(value = "SELECT * from chat_message where receiver_id=:receiverId and sender_id=:senderId and read_flag =false order by id desc limit 1",nativeQuery = true)
+    Optional<ChatMessage> findLastMessage(Long senderId, Long receiverId);
 }
