@@ -30,6 +30,10 @@ public class User {
     @Column(name = "user_image")
     private byte[] image;
 
+    @Lob
+    @Column(name = "cover_image")
+    private byte[] coverImage;
+
     @Column(name="phone_number")
     private String phoneNumber;
 

@@ -17,7 +17,8 @@ public interface UserService {
     SuccessResponse<Object> userRegister(UserDto userDto);
 
     SuccessResponse<List<UserListDTO>> getUserList(String search);
-    SuccessResponse<Object> editProfile(MultipartFile imageFile) throws IOException;
+
+    SuccessResponse<Object> editProfile(MultipartFile imageFile, MultipartFile coverImage) throws IOException;
 
     SuccessResponse<Object> getUser(Long id);
 
