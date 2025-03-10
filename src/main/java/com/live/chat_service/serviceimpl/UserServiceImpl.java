@@ -27,10 +27,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -38,6 +42,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
+    private static final String ALGORITHM = "AES";
+    private static final byte[] SECRET_KEY = "1234567890123456".getBytes();
+
 
     private final UserRepository userRepository;
 
@@ -269,9 +276,17 @@ public class UserServiceImpl implements UserService {
                 dto.setTitle(user.getTitle());
                 Long unreadCount = chatMessageRepository.countBySenderIdAndReceiverIdAndReadFlagFalse(dto.getId(), userId);
                 Optional<ChatMessage> chatMessageOptional=chatMessageRepository.findLastMessage(dto.getId(),userId);
-                if(chatMessageOptional.isPresent())
-                {
-                    dto.setMessage(chatMessageOptional.get().getContent());
+                if(chatMessageOptional.isPresent()) {
+//                    dto.setMessage(chatMessageOptional.get().getContent());
+                    try {
+                        Cipher cipher = Cipher.getInstance(ALGORITHM);
+                        SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
+                        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+                        byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(chatMessageOptional.get().getContent()));
+                        dto.setMessage(new String(decryptedData));
+                    } catch (Exception e) {
+                        throw new CustomValidationExceptions("Error while decrypting");
+                    }
                     dto.setLastMessageDateTime(String.valueOf(chatMessageOptional.get().getTimestamp()));
                 }
 

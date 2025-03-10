@@ -28,6 +28,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     Long countBySenderIdAndReceiverIdAndReadFlagFalse(Long senderId, Long receiverId);
 
 
-    @Query(value = "SELECT * from chat_message where receiver_id=:receiverId and sender_id=:senderId and read_flag =false order by id desc limit 1",nativeQuery = true)
+    @Query(value = "SELECT c from ChatMessage c where c.receiver.id=:receiverId and c.sender.id=:senderId " +
+            "order by id desc limit 1")
     Optional<ChatMessage> findLastMessage(Long senderId, Long receiverId);
 }
