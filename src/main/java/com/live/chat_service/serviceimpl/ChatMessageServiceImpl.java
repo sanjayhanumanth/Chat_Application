@@ -88,16 +88,15 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     }
 
     @Override
-    public SuccessResponse<Object> readMessage() {
+    public SuccessResponse<Object> readMessage(Long senderId, Long receiverId) {
         SuccessResponse<Object> successResponse = new SuccessResponse<>();
-        List<ChatMessage> chatMessages = chatMessageRepository.findByNonReadMessage();
+        List<ChatMessage> chatMessages = chatMessageRepository.findByNonReadMessage(senderId, receiverId);
         if(!chatMessages.isEmpty()){
-            for(ChatMessage chatMessage : chatMessages){
-//                chatMessage.set
-            }
+            chatMessages.forEach(chatMessage -> chatMessage.setReadFlag(true));
+                chatMessageRepository.saveAll(chatMessages);
         }
-
-        return null;
+        successResponse.setStatusMessage(Constant.MESSAGE_RED);
+        return successResponse;
     }
 
 }

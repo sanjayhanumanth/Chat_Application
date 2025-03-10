@@ -41,4 +41,6 @@ public class Constant {
     public static final String PASSWORD_UPDATED = "User Password Updated Successfully";
 
     public static final String EDITED_TIME_EXCEEDED = "Message Edited time Exceeded";
+
+    public static final String MESSAGE_RED = "Message Marked as Read Successfully";
 }

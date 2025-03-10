@@ -36,8 +36,8 @@ public class ChatController {
     }
 
     @PostMapping("/readMessage")
-    public SuccessResponse<Object> readMessage() {
-        return chatMessageService.readMessage();
+    public SuccessResponse<Object> readMessage(@RequestParam Long senderId, @RequestParam Long receiverId) {
+        return chatMessageService.readMessage(senderId, receiverId);
     }
 }
 
