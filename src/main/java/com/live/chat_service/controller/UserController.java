@@ -1,7 +1,5 @@
 package com.live.chat_service.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.live.chat_service.dto.EditProfileDto;
 import com.live.chat_service.dto.LoginDto;
 import com.live.chat_service.dto.UserDto;
 import com.live.chat_service.dto.UserEditDTO;
@@ -33,8 +31,8 @@ public class UserController {
     }
 
     @PostMapping(value = "/editProfilePic", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public SuccessResponse<Object> editProfile(@RequestPart(value = "image") MultipartFile imageFile,
-                                               @RequestPart(value = "coverImage") MultipartFile coverImage) throws IOException {
+    public SuccessResponse<Object> editProfile(@RequestPart(value = "image",required = false) MultipartFile imageFile,
+                                               @RequestPart(value = "coverImage",required = false) MultipartFile coverImage) throws IOException {
         return service.editProfile(imageFile,coverImage);
     }
 

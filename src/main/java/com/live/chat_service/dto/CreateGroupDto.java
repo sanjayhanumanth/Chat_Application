@@ -5,22 +5,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
-public class MessageDto {
+public class CreateGroupDto {
 
     private Long id;
 
-    private Long senderId;
+    private String groupName;
 
-    private Long receiverId;
-
-    private String content;
-
-    private LocalDateTime timestamp;
+    private List<Long> userIds;
 
 }

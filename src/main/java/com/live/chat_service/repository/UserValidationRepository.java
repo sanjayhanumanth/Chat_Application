@@ -2,7 +2,6 @@ package com.live.chat_service.repository;
 
 import com.live.chat_service.model.UserValidation;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
