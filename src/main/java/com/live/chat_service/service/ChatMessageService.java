@@ -16,4 +16,6 @@ public interface ChatMessageService {
     SuccessResponse<List<MessageDto>> getChatMessages(Long senderId, Long receiverId);
 
     SuccessResponse<Object> editMessages(EditMessageDTO editMessageDTO);
+
+    SuccessResponse<Object> readMessage();
 }

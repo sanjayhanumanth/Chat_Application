@@ -86,4 +86,18 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         successResponse.setStatusMessage(Constant.MESSAGE_UPDATED);
         return successResponse;
     }
+
+    @Override
+    public SuccessResponse<Object> readMessage() {
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
+        List<ChatMessage> chatMessages = chatMessageRepository.findByNonReadMessage();
+        if(!chatMessages.isEmpty()){
+            for(ChatMessage chatMessage : chatMessages){
+//                chatMessage.set
+            }
+        }
+
+        return null;
+    }
+
 }

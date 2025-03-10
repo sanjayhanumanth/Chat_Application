@@ -34,5 +34,10 @@ public class ChatController {
     public SuccessResponse<Object> editMessages(@RequestBody EditMessageDTO editMessageDTO) {
         return chatMessageService.editMessages(editMessageDTO);
     }
+
+    @PostMapping("/readMessage")
+    public SuccessResponse<Object> readMessage() {
+        return chatMessageService.readMessage();
+    }
 }
 
