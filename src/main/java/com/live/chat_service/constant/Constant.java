@@ -16,4 +16,7 @@ public class Constant {
 
     public static final long REFRESH_TOKEN_EXPIRATION = 24 * 60 * 60 * 1000;
 
+    public static final String MESSAGE_NOT_FOUND = "Message Not found";
+
+    public static final String MESSAGE_UPDATED = "Message Updated Successfully";
 }
