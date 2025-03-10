@@ -75,7 +75,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             ChatMessage chatMessage = message.get();
             LocalDateTime tenMinutesAgo = LocalDateTime.now().minusMinutes(10);
             if (chatMessage.getTimestamp().isBefore(tenMinutesAgo)) {
-                throw new CustomValidationExceptions("You can only edit a message within 10 minutes of sending.");
+                throw new CustomValidationExceptions(Constant.EDITED_TIME_EXCEEDED);
             }
             chatMessage.setContent(editMessageDTO.getContent());
             chatMessageRepository.save(chatMessage);
