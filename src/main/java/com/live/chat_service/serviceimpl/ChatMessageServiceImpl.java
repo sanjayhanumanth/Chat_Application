@@ -37,6 +37,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         chatMessage.setSender(user1);
         chatMessage.setContent(messageDto.getContent());
         chatMessage.setTimestamp(LocalDateTime.now());
+        chatMessage.setReadFlag(false);
         chatMessageRepository.save(chatMessage);
         messageDto.setId(chatMessage.getId());
         messageDto.setTimestamp(chatMessage.getTimestamp() );
