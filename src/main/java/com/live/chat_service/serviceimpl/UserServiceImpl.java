@@ -7,9 +7,11 @@ import com.live.chat_service.dto.UserDto;
 import com.live.chat_service.dto.UserListDTO;
 import com.live.chat_service.dto.UserOtpValidationDto;
 import com.live.chat_service.exception.CustomValidationExceptions;
+import com.live.chat_service.model.ChatMessage;
 import com.live.chat_service.model.Role;
 import com.live.chat_service.model.User;
 import com.live.chat_service.model.UserValidation;
+import com.live.chat_service.repository.ChatMessageRepository;
 import com.live.chat_service.repository.RoleRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.repository.UserValidationRepository;
@@ -25,10 +27,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,6 +42,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
+    private static final String ALGORITHM = "AES";
+    private static final byte[] SECRET_KEY = "1234567890123456".getBytes();
+
 
     private final UserRepository userRepository;
 
@@ -44,17 +53,18 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
 
     private final UserValidationRepository userValidationRepository;
-    private final ModelMapper modelMapper;
 
     private final JavaMailSender javaMailSender;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository,UserValidationRepository userValidationRepository,JavaMailSender javaMailSender,ModelMapper modelMapper) {
+    private final ChatMessageRepository chatMessageRepository;
+
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserValidationRepository userValidationRepository, JavaMailSender javaMailSender,  ChatMessageRepository chatMessageRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
         this.userValidationRepository = userValidationRepository;
         this.javaMailSender = javaMailSender;
-        this.modelMapper = modelMapper;
+        this.chatMessageRepository = chatMessageRepository;
     }
 
     @Override
@@ -243,6 +253,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public SuccessResponse<List<UserListDTO>> getUserList(String search) {
         SuccessResponse<List<UserListDTO>> successResponse = new SuccessResponse<>();
+        Long userId = UserContextHolder.getUserTokenDto().getId();
         List<User> userList;
         if (search == null) {
             userList = userRepository.findAllIsActive();
@@ -258,11 +269,28 @@ public class UserServiceImpl implements UserService {
                 dto.setName(user.getUserName());
                 dto.setEmail(user.getEmailId());
                 dto.setRoleId(user.getRole().getId());
-                dto.setImage(user.getImage());
+                //dto.setImage(user.getImage());
                 dto.setStatus(user.getStatus());
                 dto.setDisplayName(user.getDisplayName());
                 dto.setPhoneNumber(user.getPhoneNumber());
                 dto.setTitle(user.getTitle());
+                Long unreadCount = chatMessageRepository.countBySenderIdAndReceiverIdAndReadFlagFalse(dto.getId(), userId);
+                Optional<ChatMessage> chatMessageOptional=chatMessageRepository.findLastMessage(dto.getId(),userId);
+                if(chatMessageOptional.isPresent()) {
+//                    dto.setMessage(chatMessageOptional.get().getContent());
+                    try {
+                        Cipher cipher = Cipher.getInstance(ALGORITHM);
+                        SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
+                        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+                        byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(chatMessageOptional.get().getContent()));
+                        dto.setMessage(new String(decryptedData));
+                    } catch (Exception e) {
+                        throw new CustomValidationExceptions("Error while decrypting");
+                    }
+                    dto.setLastMessageDateTime(String.valueOf(chatMessageOptional.get().getTimestamp()));
+                }
+
+                dto.setCount(unreadCount);
 
                 return dto;
             }).collect(Collectors.toList());

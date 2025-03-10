@@ -13,10 +13,10 @@ public class UserListDTO {
     private Long roleId;
     private byte[] image;
     private String phoneNumber;
-
     private String title;
-
     private String displayName;
-
     private String status;
+    private Long count;
+    private String message;
+    private String lastMessageDateTime;
 }

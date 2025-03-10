@@ -1,5 +1,7 @@
 package com.live.chat_service.serviceimpl;
 
+import com.live.chat_service.constant.Constant;
+import com.live.chat_service.dto.EditMessageDTO;
 import com.live.chat_service.dto.MessageDto;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.ChatMessage;
@@ -7,23 +9,32 @@ import com.live.chat_service.model.User;
 import com.live.chat_service.repository.ChatMessageRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.response.SuccessResponse;
+import com.live.chat_service.response.UserContextHolder;
 import com.live.chat_service.service.ChatMessageService;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class ChatMessageServiceImpl implements ChatMessageService {
+    private static final String ALGORITHM = "AES";
+    private static final byte[] SECRET_KEY = "1234567890123456".getBytes();
 
     private final ChatMessageRepository chatMessageRepository;
 
     private final UserRepository userRepository;
 
-    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository, UserRepository userRepository) {
+    private final ModelMapper modelMapper;
+
+    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository, UserRepository userRepository, ModelMapper modelMapper) {
         this.chatMessageRepository = chatMessageRepository;
         this.userRepository = userRepository;
+        this.modelMapper = modelMapper;
     }
 
     @Override
@@ -35,9 +46,11 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         ChatMessage chatMessage=new ChatMessage();
         chatMessage.setReceiver(user);
         chatMessage.setSender(user1);
-        chatMessage.setContent(messageDto.getContent());
         chatMessage.setTimestamp(LocalDateTime.now());
+        chatMessage.setReadFlag(false);
+        encryptMessage(messageDto.getContent(), chatMessage);
         chatMessageRepository.save(chatMessage);
+
         messageDto.setId(chatMessage.getId());
         messageDto.setTimestamp(chatMessage.getTimestamp() );
         return messageDto;
@@ -51,14 +64,89 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         for (ChatMessage chat : chatMessages){
             MessageDto messageDto = new MessageDto();
             messageDto.setId(chat.getId());
-            messageDto.setContent(chat.getContent());
             messageDto.setSenderId(chat.getSender().getId());
             messageDto.setReceiverId(chat.getReceiver().getId());
             messageDto.setTimestamp(chat.getTimestamp());
+            decryptMessage(chat, messageDto);
             messageDtos.add(messageDto);
         }
         successResponse.setData(messageDtos);
         return successResponse;
-
     }
+
+    @Override
+    public SuccessResponse<Object> editMessages(EditMessageDTO editMessageDTO) {
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
+        Long userId = UserContextHolder.getUserTokenDto().getId();
+        Optional<ChatMessage> message = chatMessageRepository.findById(editMessageDTO.getMessageId());
+        if(message.isPresent() && Objects.equals(message.get().getSender().getId(), userId)){
+            ChatMessage chatMessage = message.get();
+            LocalDateTime tenMinutesAgo = LocalDateTime.now().minusMinutes(10);
+            if (chatMessage.getTimestamp().isBefore(tenMinutesAgo)) {
+                throw new CustomValidationExceptions(Constant.EDITED_TIME_EXCEEDED);
+            }
+            encryptMessage(editMessageDTO.getContent(), chatMessage);
+            chatMessageRepository.save(chatMessage);
+        }
+        else {
+            throw new CustomValidationExceptions(Constant.MESSAGE_NOT_FOUND);
+        }
+        successResponse.setStatusMessage(Constant.MESSAGE_UPDATED);
+        return successResponse;
+    }
+
+    private static void encryptMessage(String messageDto, ChatMessage chatMessage) {
+        try {
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
+            SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            byte[] encryptedData = cipher.doFinal(messageDto.getBytes());
+            String encryptedContent = Base64.getEncoder().encodeToString(encryptedData);
+            chatMessage.setContent(encryptedContent);
+        } catch (Exception e) {
+            throw new CustomValidationExceptions("Error while encrypting");
+        }
+    }
+
+    @Override
+    public SuccessResponse<Object> readMessage(Long senderId, Long receiverId) {
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
+        List<ChatMessage> chatMessages = chatMessageRepository.findByNonReadMessage(senderId, receiverId);
+        if(!chatMessages.isEmpty()){
+            chatMessages.forEach(chatMessage -> chatMessage.setReadFlag(true));
+            chatMessageRepository.saveAll(chatMessages);
+            successResponse.setStatusMessage(Constant.MESSAGE_RED);
+        }
+        return successResponse;
+    }
+
+    @Override
+    public SuccessResponse<Object> getByIdMessages(Long messageId) {
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
+        MessageDto messageDto = new MessageDto();
+        Optional<ChatMessage> message = chatMessageRepository.findById(messageId);
+        if(message.isPresent()){
+            ChatMessage chatMessage = message.get();
+            messageDto.setId(chatMessage.getId());
+            messageDto.setSenderId(chatMessage.getSender().getId());
+            messageDto.setReceiverId(chatMessage.getReceiver().getId());
+            messageDto.setTimestamp(chatMessage.getTimestamp());
+            decryptMessage(chatMessage, messageDto);
+        }
+        successResponse.setData(messageDto);
+        return successResponse;
+    }
+
+    private static void decryptMessage(ChatMessage chatMessage, MessageDto messageDto) {
+        try {
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
+            SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+            byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(chatMessage.getContent()));
+            messageDto.setContent(new String(decryptedData));
+        } catch (Exception e) {
+            throw new CustomValidationExceptions("Error while decrypting");
+        }
+    }
+
 }
