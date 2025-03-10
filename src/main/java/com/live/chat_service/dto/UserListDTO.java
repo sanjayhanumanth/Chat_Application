@@ -12,4 +12,11 @@ public class UserListDTO {
     private String email;
     private Long roleId;
     private byte[] image;
+    private String phoneNumber;
+
+    private String title;
+
+    private String displayName;
+
+    private String status;
 }

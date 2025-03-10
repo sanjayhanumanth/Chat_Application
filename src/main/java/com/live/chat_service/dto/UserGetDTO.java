@@ -11,7 +11,7 @@ public class UserGetDTO {
 
     private String userName;
 
-    private String userMail;
+    private String emailId;
 
     private Long roleId;
 

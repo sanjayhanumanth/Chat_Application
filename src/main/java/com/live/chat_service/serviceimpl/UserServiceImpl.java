@@ -10,6 +10,7 @@ import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.response.UserContextHolder;
 import com.live.chat_service.service.UserService;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,20 +32,23 @@ public class UserServiceImpl implements UserService {
 
     private final RoleRepository roleRepository;
 
+    private final ModelMapper modelMapper;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
+
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, ModelMapper modelMapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
+        this.modelMapper = modelMapper;
     }
 
     @Override
     public SuccessResponse<Object> userRegister(UserDto userDto) {
-        SuccessResponse<Object> successResponse=new SuccessResponse<>();
-        Optional<User> userOptional=userRepository.findByEmailId(userDto.getEmail());
-        Optional< Role> roleOptional=roleRepository.findById(userDto.getRoleId());
-        if (userOptional.isEmpty()){
-            User user=new User();
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
+        Optional<User> userOptional = userRepository.findByEmailId(userDto.getEmail());
+        Optional<Role> roleOptional = roleRepository.findById(userDto.getRoleId());
+        if (userOptional.isEmpty()) {
+            User user = new User();
             String hashedPassword = passwordEncoder.encode(userDto.getPassword());
             user.setUserName(userDto.getName());
             user.setEmailId(userDto.getEmail());
@@ -55,7 +59,7 @@ public class UserServiceImpl implements UserService {
             user.setCreatedAt(Timestamp.from(Instant.now()));
             user.setCreatedBy(1L);
             userRepository.save(user);
-        }else {
+        } else {
             throw new CustomValidationExceptions("Email Already Exists");
         }
         successResponse.setStatusMessage("User Register Successfully..");
@@ -64,7 +68,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public SuccessResponse<Object> editProfile(MultipartFile imageFile) throws IOException {
-        SuccessResponse<Object> successResponse=new SuccessResponse<>();
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
         Long userId = UserContextHolder.getUserTokenDto().getId();
         Optional<User> userOptional = userRepository.findByIdIsActive(userId);
         if (userOptional.isPresent()) {
@@ -78,60 +82,46 @@ public class UserServiceImpl implements UserService {
         return successResponse;
     }
 
-    @Override
     public SuccessResponse<Object> getUser(Long id) {
-        SuccessResponse<Object> successResponse=new SuccessResponse<>();
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
+        User user = userRepository.findByIdIsActive(id)
+                .orElseThrow(() -> new CustomValidationExceptions("Invalid Id"));
 
-        Optional<User> userOptional=userRepository.findByIdIsActive(id);
-        UserGetDTO userListDTO=new UserGetDTO();
+        UserGetDTO dto = new UserGetDTO();
+        dto.setId(user.getId());
+        dto.setUserName(user.getUserName());
+        dto.setEmailId(user.getEmailId());
+        dto.setRoleId(user.getRole().getId());
+        dto.setImage(user.getImage());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setTitle(user.getTitle());
+        dto.setDisplayName(user.getDisplayName());
+        dto.setStatus(user.getStatus());
 
-        if(userOptional.isPresent())
-        {
-            User user=userOptional.get();
-            userListDTO.setId(user.getId());
-            userListDTO.setUserName(user.getUserName());
-            userListDTO.setRoleId(user.getRole().getId());
-            userListDTO.setUserMail(user.getEmailId());
-            userListDTO.setImage(user.getImage());
-            userListDTO.setPhoneNumber(user.getPhoneNumber());
-            userListDTO.setTitle(user.getTitle());
-            userListDTO.setDisplayName(user.getDisplayName());
-            userListDTO.setStatus(user.getStatus());
-
-        }
-        else {
-            throw new CustomValidationExceptions("Invalid Id");
-        }
-        successResponse.setData(userListDTO);
+        successResponse.setData(dto);
         successResponse.setStatusMessage("Success");
+        successResponse.setStatusCode(200);
         return successResponse;
-
     }
 
     @Override
     public SuccessResponse<Object> editUser(UserEditDTO userEditDTO) {
-        SuccessResponse<Object> successResponse=new SuccessResponse<>();
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
         Long userId = UserContextHolder.getUserTokenDto().getId();
-        Optional<User> userOptional=userRepository.findByIdIsActive(userId);
-        User user;
-        if(userOptional.isPresent())
-        {
-            user=userOptional.get();
-            user.setEmailId(userEditDTO.getUserMail());
-            user.setUserName(userEditDTO.getUserName());
-            user.setDisplayName(userEditDTO.getDisplayName());
-            user.setTitle(userEditDTO.getTitle());
-            user.setPhoneNumber(userEditDTO.getPhoneNumber());
-            user.setStatus(userEditDTO.getStatus());
-        }
-        else {
-            throw new CustomValidationExceptions("Invalid Id");
-        }
+        User user = userRepository.findByIdIsActive(userId)
+                .orElseThrow(() -> new CustomValidationExceptions("Invalid Id"));
+
+
+        //user.setEmailId(userEditDTO.getUserMail());
+        user.setUserName(userEditDTO.getUserName());
+        user.setDisplayName(userEditDTO.getDisplayName());
+        user.setTitle(userEditDTO.getTitle());
+        user.setPhoneNumber(userEditDTO.getPhoneNumber());
+        user.setStatus(userEditDTO.getStatus());
         userRepository.save(user);
         successResponse.setStatusMessage("Success");
         successResponse.setStatusCode(200);
         return successResponse;
-
 
     }
 
@@ -139,13 +129,11 @@ public class UserServiceImpl implements UserService {
     public SuccessResponse<List<UserListDTO>> getUserList(String search) {
         SuccessResponse<List<UserListDTO>> successResponse = new SuccessResponse<>();
         List<User> userList;
-        if(search==null)
-        {
+        if (search == null) {
             userList = userRepository.findAllIsActive();
 
-        }
-        else {
-            userList=userRepository.findByName(search);
+        } else {
+            userList = userRepository.findByName(search);
         }
 
         if (!userList.isEmpty()) {
@@ -156,6 +144,11 @@ public class UserServiceImpl implements UserService {
                 dto.setEmail(user.getEmailId());
                 dto.setRoleId(user.getRole().getId());
                 dto.setImage(user.getImage());
+                dto.setStatus(user.getStatus());
+                dto.setDisplayName(user.getDisplayName());
+                dto.setPhoneNumber(user.getPhoneNumber());
+                dto.setTitle(user.getTitle());
+
                 return dto;
             }).collect(Collectors.toList());
 
@@ -171,17 +164,17 @@ public class UserServiceImpl implements UserService {
 
     public User userLogin(LoginDto loginDto) {
         User user;
-        Optional<User> userOptional=userRepository.findByEmailId(loginDto.getEmail());
-        if (userOptional.isPresent()){
-            if (passwordEncoder.matches(loginDto.getPassword(), userOptional.get().getPassword())){
-                user=userOptional.get();
-            }else {
+        Optional<User> userOptional = userRepository.findByEmailId(loginDto.getEmail());
+        if (userOptional.isPresent()) {
+            if (passwordEncoder.matches(loginDto.getPassword(), userOptional.get().getPassword())) {
+                user = userOptional.get();
+            } else {
                 throw new CustomValidationExceptions("Invalid Password");
             }
-        }else {
+        } else {
             throw new CustomValidationExceptions("Invalid Email");
         }
-    return user;
+        return user;
     }
 
 }
