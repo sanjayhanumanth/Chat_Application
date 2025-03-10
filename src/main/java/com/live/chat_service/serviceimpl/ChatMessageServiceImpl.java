@@ -13,14 +13,16 @@ import com.live.chat_service.response.UserContextHolder;
 import com.live.chat_service.service.ChatMessageService;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class ChatMessageServiceImpl implements ChatMessageService {
+    private static final String ALGORITHM = "AES";
+    private static final byte[] SECRET_KEY = "1234567890123456".getBytes();
 
     private final ChatMessageRepository chatMessageRepository;
 
@@ -40,9 +42,9 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         ChatMessage chatMessage=new ChatMessage();
         chatMessage.setReceiver(user);
         chatMessage.setSender(user1);
-        chatMessage.setContent(messageDto.getContent());
         chatMessage.setTimestamp(LocalDateTime.now());
         chatMessage.setReadFlag(false);
+        encryptMessage(messageDto.getContent(), chatMessage);
         chatMessageRepository.save(chatMessage);
         messageDto.setId(chatMessage.getId());
         messageDto.setTimestamp(chatMessage.getTimestamp() );
@@ -57,10 +59,18 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         for (ChatMessage chat : chatMessages){
             MessageDto messageDto = new MessageDto();
             messageDto.setId(chat.getId());
-            messageDto.setContent(chat.getContent());
             messageDto.setSenderId(chat.getSender().getId());
             messageDto.setReceiverId(chat.getReceiver().getId());
             messageDto.setTimestamp(chat.getTimestamp());
+            try {
+                Cipher cipher = Cipher.getInstance(ALGORITHM);
+                SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
+                cipher.init(Cipher.DECRYPT_MODE, secretKey);
+                byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(chat.getContent()));
+                messageDto.setContent(new String(decryptedData));
+            } catch (Exception e) {
+                throw new CustomValidationExceptions("Error while decrypting");
+            }
             messageDtos.add(messageDto);
         }
         successResponse.setData(messageDtos);
@@ -78,7 +88,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             if (chatMessage.getTimestamp().isBefore(tenMinutesAgo)) {
                 throw new CustomValidationExceptions(Constant.EDITED_TIME_EXCEEDED);
             }
-            chatMessage.setContent(editMessageDTO.getContent());
+            encryptMessage(editMessageDTO.getContent(), chatMessage);
             chatMessageRepository.save(chatMessage);
         }
         else {
@@ -88,15 +98,28 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         return successResponse;
     }
 
+    private static void encryptMessage(String messageDto, ChatMessage chatMessage) {
+        try {
+            Cipher cipher = Cipher.getInstance(ALGORITHM);
+            SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            byte[] encryptedData = cipher.doFinal(messageDto.getBytes());
+            String encryptedContent = Base64.getEncoder().encodeToString(encryptedData);
+            chatMessage.setContent(encryptedContent);
+        } catch (Exception e) {
+            throw new CustomValidationExceptions("Error while encrypting");
+        }
+    }
+
     @Override
     public SuccessResponse<Object> readMessage(Long senderId, Long receiverId) {
         SuccessResponse<Object> successResponse = new SuccessResponse<>();
         List<ChatMessage> chatMessages = chatMessageRepository.findByNonReadMessage(senderId, receiverId);
         if(!chatMessages.isEmpty()){
             chatMessages.forEach(chatMessage -> chatMessage.setReadFlag(true));
-                chatMessageRepository.saveAll(chatMessages);
+            chatMessageRepository.saveAll(chatMessages);
+            successResponse.setStatusMessage(Constant.MESSAGE_RED);
         }
-        successResponse.setStatusMessage(Constant.MESSAGE_RED);
         return successResponse;
     }
 
