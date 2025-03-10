@@ -39,5 +39,11 @@ public class ChatController {
     public SuccessResponse<Object> readMessage(@RequestParam Long senderId, @RequestParam Long receiverId) {
         return chatMessageService.readMessage(senderId, receiverId);
     }
+
+    @GetMapping("/messageById")
+    public SuccessResponse<Object> getByIdMessages(@RequestParam Long messageId) {
+        return chatMessageService.getByIdMessages(messageId);
+    }
+
 }
 

@@ -11,11 +11,11 @@ public interface ChatMessageService {
 
     MessageDto saveMessage(MessageDto chatMessage);
 
-//    List<ChatDTO> getChatMessages(Long senderId, Long receiverId);
-
     SuccessResponse<List<MessageDto>> getChatMessages(Long senderId, Long receiverId);
 
     SuccessResponse<Object> editMessages(EditMessageDTO editMessageDTO);
 
     SuccessResponse<Object> readMessage(Long senderId, Long receiverId);
+
+    SuccessResponse<Object> getByIdMessages(Long messageId);
 }
