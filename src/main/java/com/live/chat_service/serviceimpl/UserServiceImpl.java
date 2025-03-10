@@ -10,6 +10,7 @@ import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.Role;
 import com.live.chat_service.model.User;
 import com.live.chat_service.model.UserValidation;
+import com.live.chat_service.repository.ChatMessageRepository;
 import com.live.chat_service.repository.RoleRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.repository.UserValidationRepository;
@@ -44,17 +45,18 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
 
     private final UserValidationRepository userValidationRepository;
-    private final ModelMapper modelMapper;
 
     private final JavaMailSender javaMailSender;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository,UserValidationRepository userValidationRepository,JavaMailSender javaMailSender,ModelMapper modelMapper) {
+    private final ChatMessageRepository chatMessageRepository;
+
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserValidationRepository userValidationRepository, JavaMailSender javaMailSender,  ChatMessageRepository chatMessageRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
         this.userValidationRepository = userValidationRepository;
         this.javaMailSender = javaMailSender;
-        this.modelMapper = modelMapper;
+        this.chatMessageRepository = chatMessageRepository;
     }
 
     @Override
@@ -243,6 +245,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public SuccessResponse<List<UserListDTO>> getUserList(String search) {
         SuccessResponse<List<UserListDTO>> successResponse = new SuccessResponse<>();
+        Long userId = UserContextHolder.getUserTokenDto().getId();
         List<User> userList;
         if (search == null) {
             userList = userRepository.findAllIsActive();
@@ -258,12 +261,13 @@ public class UserServiceImpl implements UserService {
                 dto.setName(user.getUserName());
                 dto.setEmail(user.getEmailId());
                 dto.setRoleId(user.getRole().getId());
-                dto.setImage(user.getImage());
+                //dto.setImage(user.getImage());
                 dto.setStatus(user.getStatus());
                 dto.setDisplayName(user.getDisplayName());
                 dto.setPhoneNumber(user.getPhoneNumber());
                 dto.setTitle(user.getTitle());
-
+                Long unreadCount = chatMessageRepository.countBySenderAndReceiverAndReadFlagFalse(dto.getId(), userId);
+                dto.setCount(unreadCount);
                 return dto;
             }).collect(Collectors.toList());
 

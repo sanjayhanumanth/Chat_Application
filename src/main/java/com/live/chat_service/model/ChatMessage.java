@@ -30,7 +30,7 @@ public class ChatMessage {
     @Column(name = "timestamp")
     private LocalDateTime timestamp;
 
-    @Column(name = "read_flag")
+    @Column(name="read_flag")
     private Boolean readFlag;
 
 }

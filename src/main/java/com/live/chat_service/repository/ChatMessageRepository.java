@@ -23,4 +23,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
            "AND m.readFlag = false ) ORDER BY m." +
             "timestamp ASC")
     List<ChatMessage> findByNonReadMessage(Long senderId, Long receiverId);
+  @Query(value = "SELECT count(content) from chat_message where receiver_id=:receiverId and sender_id=:senderId and read_flag =false",nativeQuery = true)
+    Long countBySenderAndReceiverAndReadFlagFalse(Long senderId, Long receiverId);
 }
