@@ -24,7 +24,8 @@ public interface UserRepository extends JpaRepository<User,Long> {
     List<User> findAllIsActive();
 
 
-    @Query("SELECT u FROM User u WHERE u.isActive = true AND u.userName LIKE %:search% ")
+
+    @Query("SELECT u FROM User u WHERE u.isActive = true AND (u.userName LIKE %:search%  or u.displayName LIKE %:search%)")
     List<User> findByName(String search);
 
 
