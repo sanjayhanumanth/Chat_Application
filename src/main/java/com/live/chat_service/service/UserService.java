@@ -1,9 +1,10 @@
 package com.live.chat_service.service;
 
-import com.live.chat_service.dto.EditProfileDto;
+import com.live.chat_service.dto.LoginDto;
 import com.live.chat_service.dto.UserDto;
 import com.live.chat_service.dto.UserEditDTO;
 import com.live.chat_service.dto.UserListDTO;
+import com.live.chat_service.dto.UserOtpValidationDto;
 import com.live.chat_service.response.SuccessResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,4 +22,10 @@ public interface UserService {
     SuccessResponse<Object> getUser(Long id);
 
     SuccessResponse<Object> editUser(UserEditDTO userEditDTO);
+
+    SuccessResponse<Object> forgotPassword(String email);
+
+    SuccessResponse<Object> verifyOTP(UserOtpValidationDto userOtpValidationDto);
+
+    SuccessResponse<Object> updatePassword(LoginDto loginDto);
 }

@@ -2,9 +2,11 @@ package com.live.chat_service.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.live.chat_service.dto.EditProfileDto;
+import com.live.chat_service.dto.LoginDto;
 import com.live.chat_service.dto.UserDto;
 import com.live.chat_service.dto.UserEditDTO;
 import com.live.chat_service.dto.UserListDTO;
+import com.live.chat_service.dto.UserOtpValidationDto;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.service.UserService;
 import org.springframework.http.MediaType;
@@ -51,4 +53,20 @@ public class UserController {
     {
         return service.editUser(userEditDTO);
     }
+
+    @PostMapping("/forgotPassword")
+    SuccessResponse<Object> forgotPassword(@RequestParam String email){
+        return service.forgotPassword(email);
+    }
+
+    @PostMapping("/verifyOTP")
+    SuccessResponse<Object> verifyOTP(@RequestBody UserOtpValidationDto userOtpValidationDto){
+        return service.verifyOTP(userOtpValidationDto);
+    }
+
+    @PostMapping("/updatePassword")
+    SuccessResponse<Object> updatePassword (@RequestBody LoginDto loginDto){
+        return service.updatePassword(loginDto);
+    }
+
 }
