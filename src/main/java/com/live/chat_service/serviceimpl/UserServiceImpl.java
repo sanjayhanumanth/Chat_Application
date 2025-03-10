@@ -178,9 +178,9 @@ public class UserServiceImpl implements UserService {
             mimeMessageHelper.setTo(email);
             mimeMessageHelper.setText("<html><b style=\"font-size:1rem;\">Dear "+userName+"</b><br>"+
                     "We receive a request to reset your Coherent Chat Application Account. Please use the following One-Time Password(OTP) " +
-                    "to proceed with resetting your password:<br>"+otp+"<br>"+
-                    "<p></p><p><b>Thanks & Regards,</b><p>Coherent Team</p><p>web : www.coherent.in</p><p style=margin-top:-50px><img src='cid:identifier1234' " +
-                    "width=\"100\" height=\"150\"/></p></html>", true);
+                    "to proceed with resetting your password:<br><b>"+otp+"</b><br>"+
+                    "<p></p><p><b>Thanks & Regards,</b><p>Coherent Team</p><p>web : www.coherent.in</p><p style=margin-top:-50px> " +
+                    "</p></html>", true);
             javaMailSender.send(mimeMessageHelper.getMimeMessage());
         } catch (Exception e) {
             throw new CustomValidationExceptions(Constant.ERROR_CODE);
