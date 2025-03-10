@@ -87,25 +87,9 @@ private static final String SECRET_KEY = "coherent";
         claims.put("email", user.getEmailId());
         claims.put("role",user.getRole().getRoleName());
         String accessToken = generateToken(claims, user.getEmailId(), Constant.ACCESS_TOKEN_EXPIRATION);
-        //String refreshToken = generateToken(claims, user.getEmailId(), Constant.REFRESH_TOKEN_EXPIRATION);
         Map<String, String> tokens = new HashMap<>();
         tokens.put(Constant.ACCESS_TOKEN, accessToken);
-        //tokens.put(Constant.REFRESH_TOKEN, refreshToken);
-
         return tokens;
-    }
-
-    public Map<String, String> refreshToken(String refreshToken) {
-        if (refreshToken == null) {
-            throw new CustomValidationExceptions("Refresh token is required");
-        }
-        Map<String, Object> claims = validateToken(refreshToken);
-        if (claims == null) {
-            throw new CustomValidationExceptions("Invalid or expired refresh token");
-        }
-        String newAccessToken = generateToken(claims, (String) claims.get("email"), Constant.ACCESS_TOKEN_EXPIRATION);
-        String newRefreshToken = generateToken(claims, (String) claims.get("email"), Constant.REFRESH_TOKEN_EXPIRATION);
-        return Map.of(Constant.ACCESS_TOKEN, newAccessToken,Constant.REFRESH_TOKEN,newRefreshToken);
     }
 
     public boolean validateTokenId(String token, UserDetails userDetails) {
@@ -113,22 +97,4 @@ private static final String SECRET_KEY = "coherent";
         return (email.equals(userDetails.getUsername()));
     }
 
-    private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
-    }
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-    private Claims extractAllClaims(String token) {
-        try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (Exception e) {
-            throw new CustomValidationExceptions("Error extracting claims from token");
-        }
-    }
 }

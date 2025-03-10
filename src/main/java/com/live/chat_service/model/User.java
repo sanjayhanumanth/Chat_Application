@@ -30,6 +30,18 @@ public class User {
     @Column(name = "user_image")
     private byte[] image;
 
+    @Column(name="phone_number")
+    private String phoneNumber;
+
+    @Column(name="title")
+    private String title;
+
+    @Column(name="display_name")
+    private String displayName;
+
+    @Column(name="status")
+    private String status;
+
     @Column(name = "is_active")
     private boolean isActive;
 
@@ -51,5 +63,8 @@ public class User {
     @OneToOne
     @JoinColumn(name="role_id_fk")
     private Role role;
+
+
+
 
 }

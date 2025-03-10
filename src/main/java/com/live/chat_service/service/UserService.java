@@ -2,6 +2,7 @@ package com.live.chat_service.service;
 
 import com.live.chat_service.dto.LoginDto;
 import com.live.chat_service.dto.UserDto;
+import com.live.chat_service.dto.UserEditDTO;
 import com.live.chat_service.dto.UserListDTO;
 import com.live.chat_service.dto.UserOtpValidationDto;
 import com.live.chat_service.response.SuccessResponse;
@@ -17,6 +18,10 @@ public interface UserService {
 
     SuccessResponse<List<UserListDTO>> getUserList(String search);
     SuccessResponse<Object> editProfile(MultipartFile imageFile) throws IOException;
+
+    SuccessResponse<Object> getUser(Long id);
+
+    SuccessResponse<Object> editUser(UserEditDTO userEditDTO);
 
     SuccessResponse<Object> forgotPassword(String email);
 
