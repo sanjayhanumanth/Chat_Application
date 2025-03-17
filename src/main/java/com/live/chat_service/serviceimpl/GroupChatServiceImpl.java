@@ -36,16 +36,15 @@ public class GroupChatServiceImpl implements GroupChatService {
     @Transactional
     @Override
     public CreateGroupDto createGroup(CreateGroupDto createGroupDto) {
-        Long userId= UserContextHolder.getUserTokenDto().getId();
         GroupChat groupChat =new GroupChat();
         groupChat.setGroupName(createGroupDto.getGroupName());
         groupChat.setActive(true);
         groupChat.setDeletedFlag(false);
         groupChat.setCreatedAt(Timestamp.from(Instant.now()));
-        groupChat.setCreatedBy(userId);
+        groupChat.setCreatedBy(createGroupDto.getSenderId());
         groupChatMessageRepository.save(groupChat);
         List<Long> groupMembers = new ArrayList<>(createGroupDto.getGroupMemberIds());
-        groupMembers.add(userId);
+        groupMembers.add(createGroupDto.getSenderId());
 
         List<GroupChatUser> groupChatUserList= new ArrayList<>(groupMembers.
                 stream().map(users -> {
