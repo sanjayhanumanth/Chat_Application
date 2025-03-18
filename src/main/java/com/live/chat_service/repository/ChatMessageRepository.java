@@ -31,4 +31,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Query(value = "SELECT c from ChatMessage c where c.receiver.id=:receiverId and c.sender.id=:senderId " +
             "order by id desc limit 1")
     Optional<ChatMessage> findLastMessage(Long senderId, Long receiverId);
+
+    @Query(value = "SELECT c from ChatMessage c where c.groupChat.id = :groupId ORDER BY c.timestamp ASC")
+    List<ChatMessage> findByGroupId(Long groupId);
 }
