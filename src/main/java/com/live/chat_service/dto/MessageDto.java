@@ -23,4 +23,6 @@ public class MessageDto {
 
     private LocalDateTime timestamp;
 
+    private Long groupId;
+
 }

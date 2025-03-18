@@ -36,15 +36,17 @@ public class GroupChatServiceImpl implements GroupChatService {
     @Transactional
     @Override
     public CreateGroupDto createGroup(CreateGroupDto createGroupDto) {
-        Long userId= UserContextHolder.getUserTokenDto().getId();
         GroupChat groupChat =new GroupChat();
         groupChat.setGroupName(createGroupDto.getGroupName());
         groupChat.setActive(true);
         groupChat.setDeletedFlag(false);
         groupChat.setCreatedAt(Timestamp.from(Instant.now()));
-        groupChat.setCreatedBy(userId);
+        groupChat.setCreatedBy(createGroupDto.getSenderId());
         groupChatMessageRepository.save(groupChat);
-        List<GroupChatUser> groupChatUserList= new ArrayList<>(createGroupDto.getGroupMemberIds().
+        List<Long> groupMembers = new ArrayList<>(createGroupDto.getGroupMemberIds());
+        groupMembers.add(createGroupDto.getSenderId());
+
+        List<GroupChatUser> groupChatUserList= new ArrayList<>(groupMembers.
                 stream().map(users -> {
                     GroupChatUser groupChatUser = new GroupChatUser();
                     User user = userRepository.findByIdIsActive(users).
@@ -54,13 +56,6 @@ public class GroupChatServiceImpl implements GroupChatService {
                     groupChatUser.setActive(true);
                     return groupChatUser;
                 }).toList());
-        GroupChatUser grChat=new GroupChatUser();
-        User usr=userRepository.findByIdIsActive(userId).
-                orElseThrow(() -> new CustomValidationExceptions("User not found with id: " + userId));
-        grChat.setUser(usr);
-        grChat.setGroupChat(groupChat);
-        grChat.setActive(true);
-        groupChatUserList.add(grChat);
         groupChatUserRepository.saveAll(groupChatUserList);
         createGroupDto.setId(groupChat.getId());
         return createGroupDto;
