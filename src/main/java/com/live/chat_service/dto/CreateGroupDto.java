@@ -17,6 +17,8 @@ public class CreateGroupDto {
 
     private String groupName;
 
-    private List<Long> userIds;
+    private Long senderId;
+
+    private List<Long> groupMemberIds;
 
 }

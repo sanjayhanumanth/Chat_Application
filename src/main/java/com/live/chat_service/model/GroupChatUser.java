@@ -29,7 +29,7 @@ public class GroupChatUser {
 
     @ManyToOne
     @JoinColumn(name = "group_chat_id_fk")
-    private GroupChatMessage groupChatMessage;
+    private GroupChat groupChat;
 
     @Column(name = "is_active")
     private boolean isActive;

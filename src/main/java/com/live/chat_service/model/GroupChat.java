@@ -15,10 +15,10 @@ import java.sql.Timestamp;
 
 @Entity
 @Data
-@Table(name = "chat_group_chat_message")
+@Table(name = "chat_group")
 @NoArgsConstructor
 @AllArgsConstructor
-public class GroupChatMessage {
+public class GroupChat {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
