@@ -13,11 +13,19 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     List<ChatMessage> findBySenderIdAndReceiverIdOrderByTimestampAsc(Long senderId, Long receiverId);
 
+//    @Query("SELECT m FROM ChatMessage m " +
+//            "WHERE ((m.sender.id = :senderId AND m.receiver.id = :receiverId)" +
+//            " OR" +
+//            " (m.sender.id = :receiverId AND m.receiver.id = :senderId)) ORDER BY m.timestamp ASC")
+//    List<ChatMessage> findBySenderReceiverId(Long senderId, Long receiverId);
+
     @Query("SELECT m FROM ChatMessage m " +
-            "WHERE ((m.sender.id = :senderId AND m.receiver.id = :receiverId)" +
-            " OR" +
-            " (m.sender.id = :receiverId AND m.receiver.id = :senderId)) ORDER BY m.timestamp ASC")
+            "WHERE ((m.sender.id = :senderId AND m.receiver.id = :receiverId) " +
+            "OR (m.sender.id = :receiverId AND m.receiver.id = :senderId)) " +
+            "AND m.groupChat.id IS NULL " +
+            "ORDER BY m.timestamp ASC")
     List<ChatMessage> findBySenderReceiverId(Long senderId, Long receiverId);
+
 
     @Query("SELECT m FROM ChatMessage m " +
             "WHERE ((m.sender.id = :senderId AND m.receiver.id = :receiverId)" +
