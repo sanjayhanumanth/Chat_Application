@@ -8,7 +8,6 @@ import com.live.chat_service.model.User;
 import com.live.chat_service.repository.GroupChatMessageRepository;
 import com.live.chat_service.repository.GroupChatUserRepository;
 import com.live.chat_service.repository.UserRepository;
-import com.live.chat_service.response.UserContextHolder;
 import com.live.chat_service.service.GroupChatService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
