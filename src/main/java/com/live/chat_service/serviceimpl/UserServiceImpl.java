@@ -8,19 +8,24 @@ import com.live.chat_service.dto.UserListDTO;
 import com.live.chat_service.dto.UserOtpValidationDto;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.ChatMessage;
+import com.live.chat_service.model.GroupChatUser;
 import com.live.chat_service.model.Role;
 import com.live.chat_service.model.User;
+import com.live.chat_service.model.UserAccessLog;
 import com.live.chat_service.model.UserValidation;
 import com.live.chat_service.repository.ChatMessageRepository;
+import com.live.chat_service.repository.GroupChatUserRepository;
 import com.live.chat_service.repository.RoleRepository;
+import com.live.chat_service.repository.UserAccessLogRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.repository.UserValidationRepository;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.response.UserContextHolder;
 import com.live.chat_service.service.UserService;
-import org.modelmapper.ModelMapper;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,9 +39,14 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -45,11 +55,13 @@ public class UserServiceImpl implements UserService {
     private static final String ALGORITHM = "AES";
     private static final byte[] SECRET_KEY = "1234567890123456".getBytes();
 
+    private final GroupChatUserRepository groupChatUserRepository;
 
     private final UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
 
+    private final UserAccessLogRepository userAccessLogRepository;
     private final RoleRepository roleRepository;
 
     private final UserValidationRepository userValidationRepository;
@@ -58,9 +70,11 @@ public class UserServiceImpl implements UserService {
 
     private final ChatMessageRepository chatMessageRepository;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserValidationRepository userValidationRepository, JavaMailSender javaMailSender,  ChatMessageRepository chatMessageRepository) {
+    public UserServiceImpl(GroupChatUserRepository groupChatUserRepository, UserRepository userRepository, PasswordEncoder passwordEncoder, UserAccessLogRepository userAccessLogRepository, RoleRepository roleRepository, UserValidationRepository userValidationRepository, JavaMailSender javaMailSender, ChatMessageRepository chatMessageRepository) {
+        this.groupChatUserRepository = groupChatUserRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userAccessLogRepository = userAccessLogRepository;
         this.roleRepository = roleRepository;
         this.userValidationRepository = userValidationRepository;
         this.javaMailSender = javaMailSender;
@@ -113,8 +127,12 @@ public class UserServiceImpl implements UserService {
 
     public SuccessResponse<Object> getUser(Long id) {
         SuccessResponse<Object> successResponse = new SuccessResponse<>();
+        Long userId = UserContextHolder.getUserTokenDto().getId(); 
+
         User user = userRepository.findByIdIsActive(id)
                 .orElseThrow(() -> new CustomValidationExceptions("Invalid Id"));
+
+        updateUserAccessLog(userId, id);
 
         UserGetDTO dto = new UserGetDTO();
         dto.setId(user.getId());
@@ -132,6 +150,28 @@ public class UserServiceImpl implements UserService {
         successResponse.setStatusCode(200);
         return successResponse;
     }
+
+    @Transactional
+    public void updateUserAccessLog(Long userId, Long contactUserId) {
+        if (userId.equals(contactUserId)) {
+            return;
+        }
+
+        Optional<UserAccessLog> logOptional = userAccessLogRepository.findByUserIdAndContactUserId(userId, contactUserId);
+
+        if (logOptional.isPresent()) {
+            UserAccessLog log = logOptional.get();
+            log.setLastContacted(LocalDateTime.now());
+            userAccessLogRepository.save(log);
+        } else {
+            UserAccessLog newLog = new UserAccessLog();
+            newLog.setUser(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")));
+            newLog.setContactUser(userRepository.findById(contactUserId).orElseThrow(() -> new RuntimeException("Contact User not found")));
+            newLog.setLastContacted(LocalDateTime.now());
+            userAccessLogRepository.save(newLog);
+        }
+    }
+
 
     @Override
     public SuccessResponse<Object> editUser(UserEditDTO userEditDTO) {
@@ -251,58 +291,82 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public SuccessResponse<List<UserListDTO>> getUserList(String search) {
-        SuccessResponse<List<UserListDTO>> successResponse = new SuccessResponse<>();
+    public SuccessResponse<Map<String, Object>> getUserList(String search) {
+        SuccessResponse<Map<String, Object>> successResponse = new SuccessResponse<>();
         Long userId = UserContextHolder.getUserTokenDto().getId();
         List<User> userList;
-        if (search == null) {
-            userList = userRepository.findAllIsActive();
+        List<GroupChatProjection> groupUsers;
 
+        if (search == null) {
+            Pageable pageable = PageRequest.of(0, 5);
+            userList = userAccessLogRepository.findFrequentlyContactedUsers(userId, pageable);
+
+            if (userList.isEmpty()) {
+                userList = userRepository.findDefaultUsers(userId, pageable);
+            } else {
+                int remaining = 5 - userList.size();
+                Pageable additionalPageable = PageRequest.of(0, remaining);
+                List<User> defaultUsers = userRepository.findDefaultUsers(userId, additionalPageable);
+                userList.addAll(defaultUsers);
+            }
+
+            groupUsers = groupChatUserRepository.findUserGroup(userId);
+
+            Optional<User> loggedInUserOpt = userRepository.findByIdIsActive(userId);
+            loggedInUserOpt.ifPresent(userList::add);
         } else {
             userList = userRepository.findByName(search);
+            groupUsers = groupChatUserRepository.findByGroupName(search, userId);
         }
 
-        if (!userList.isEmpty()) {
-            List<UserListDTO> userDTOList = userList.stream().map(user -> {
-                UserListDTO dto = new UserListDTO();
-                dto.setId(user.getId());
-                dto.setName(user.getUserName());
-                dto.setEmail(user.getEmailId());
-                dto.setRoleId(user.getRole().getId());
-                //dto.setImage(user.getImage());
-                dto.setStatus(user.getStatus());
-                dto.setDisplayName(user.getDisplayName());
-                dto.setPhoneNumber(user.getPhoneNumber());
-                dto.setTitle(user.getTitle());
-                Long unreadCount = chatMessageRepository.countBySenderIdAndReceiverIdAndReadFlagFalse(dto.getId(), userId);
-                Optional<ChatMessage> chatMessageOptional=chatMessageRepository.findLastMessage(dto.getId(),userId);
-                if(chatMessageOptional.isPresent()) {
-//                    dto.setMessage(chatMessageOptional.get().getContent());
-                    try {
-                        Cipher cipher = Cipher.getInstance(ALGORITHM);
-                        SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
-                        cipher.init(Cipher.DECRYPT_MODE, secretKey);
-                        byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(chatMessageOptional.get().getContent()));
-                        dto.setMessage(new String(decryptedData));
-                    } catch (Exception e) {
-                        throw new CustomValidationExceptions("Error while decrypting");
-                    }
-                    dto.setLastMessageDateTime(String.valueOf(chatMessageOptional.get().getTimestamp()));
+        List<GroupDTO> groupDTOList = groupUsers.stream().map(group -> {
+            GroupDTO dto = new GroupDTO();
+            dto.setGroupId(group.getGroupId());
+            dto.setGroupName(group.getGroupName());
+            return dto;
+        }).collect(Collectors.toList());
+
+        List<UserListDTO> userDTOList = userList.stream().map(user -> {
+            UserListDTO dto = new UserListDTO();
+            dto.setId(user.getId());
+            dto.setName(user.getUserName());
+            dto.setEmail(user.getEmailId());
+            dto.setRoleId(user.getRole().getId());
+            dto.setStatus(user.getStatus());
+            dto.setDisplayName(user.getDisplayName());
+            dto.setPhoneNumber(user.getPhoneNumber());
+            dto.setTitle(user.getTitle());
+
+            Long unreadCount = chatMessageRepository.countBySenderIdAndReceiverIdAndReadFlagFalse(dto.getId(), userId);
+            dto.setCount(unreadCount);
+
+            Optional<ChatMessage> chatMessageOptional = chatMessageRepository.findLastMessage(dto.getId(), userId);
+            chatMessageOptional.ifPresent(chatMessage -> {
+                try {
+                    Cipher cipher = Cipher.getInstance(ALGORITHM);
+                    SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
+                    cipher.init(Cipher.DECRYPT_MODE, secretKey);
+                    byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(chatMessage.getContent()));
+                    dto.setMessage(new String(decryptedData));
+                } catch (Exception e) {
+                    throw new CustomValidationExceptions("Error while decrypting");
                 }
+                dto.setLastMessageDateTime(String.valueOf(chatMessage.getTimestamp()));
+            });
 
-                dto.setCount(unreadCount);
+            return dto;
+        }).collect(Collectors.toList());
 
-                return dto;
-            }).collect(Collectors.toList());
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("userList", userDTOList);
+        responseData.put("groupList", groupDTOList);
 
-            successResponse.setData(userDTOList);
-            successResponse.setStatusMessage("Users fetched successfully.");
-        } else {
-            successResponse.setStatusMessage("No users found.");
-        }
+        successResponse.setData(responseData);
+        successResponse.setStatusMessage("Users and groups fetched successfully.");
 
         return successResponse;
     }
+
 
 
     public User userLogin(LoginDto loginDto) {

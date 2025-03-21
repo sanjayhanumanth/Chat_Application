@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -37,7 +38,7 @@ public class UserController {
     }
 
     @GetMapping("/userList")
-    public SuccessResponse<List<UserListDTO>> getUserList(@RequestParam(required = false) String search){
+    public SuccessResponse<Map<String, Object>> getUserList(@RequestParam(required = false) String search){
         return service.getUserList(search);
     }
 

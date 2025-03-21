@@ -11,12 +11,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public interface UserService {
     SuccessResponse<Object> userRegister(UserDto userDto);
 
-    SuccessResponse<List<UserListDTO>> getUserList(String search);
+    SuccessResponse<Map<String, Object>> getUserList(String search);
 
     SuccessResponse<Object> editProfile(MultipartFile imageFile, MultipartFile coverImage) throws IOException;
 
