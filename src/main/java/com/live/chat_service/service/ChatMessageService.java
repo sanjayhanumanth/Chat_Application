@@ -18,8 +18,4 @@ public interface ChatMessageService {
     SuccessResponse<Object> readMessage(Long senderId, Long receiverId);
 
     SuccessResponse<Object> getByIdMessages(Long messageId);
-
-    MessageDto saveGroupMessage(MessageDto messageDto);
-
-    SuccessResponse<List<MessageDto>> getGroupChatMessages(Long groupId);
 }
