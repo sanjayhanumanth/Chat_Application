@@ -3,6 +3,8 @@ package com.live.chat_service.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class UserListDTO {
@@ -19,4 +21,5 @@ public class UserListDTO {
     private Long count;
     private String message;
     private String lastMessageDateTime;
+    private List<GroupDTO> groupDTOList;
 }

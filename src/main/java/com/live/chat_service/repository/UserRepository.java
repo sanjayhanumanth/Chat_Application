@@ -1,8 +1,10 @@
 package com.live.chat_service.repository;
 
 import com.live.chat_service.model.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -27,6 +29,10 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
     @Query("SELECT u FROM User u WHERE u.isActive = true AND (u.userName LIKE %:search%  or u.displayName LIKE %:search%)")
     List<User> findByName(String search);
+
+
+    @Query("SELECT u FROM User u WHERE u.isActive = true AND u.id <> :userId ORDER BY u.id DESC")
+    List<User> findDefaultUsers(@Param("userId") Long userId, Pageable pageable);
 
 
 }
