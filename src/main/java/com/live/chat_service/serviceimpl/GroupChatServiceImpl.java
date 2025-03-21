@@ -2,7 +2,6 @@ package com.live.chat_service.serviceimpl;
 
 import com.live.chat_service.dto.CreateGroupDto;
 import com.live.chat_service.dto.GetGroupByIdDto;
-import com.live.chat_service.dto.UserGetDTO;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.GroupChat;
 import com.live.chat_service.model.GroupChatUser;

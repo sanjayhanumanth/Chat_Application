@@ -19,6 +19,8 @@ public class GetGroupByIdDto {
 
     private List<GroupUserDto> userGetDTOList;
 
+    private List<MessageDto> messageDtoList;
+
     @Getter
     @Setter
     public static class GroupUserDto {
