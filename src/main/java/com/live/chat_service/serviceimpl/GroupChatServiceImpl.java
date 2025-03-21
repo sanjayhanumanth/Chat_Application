@@ -1,6 +1,8 @@
 package com.live.chat_service.serviceimpl;
 
 import com.live.chat_service.dto.CreateGroupDto;
+import com.live.chat_service.dto.GetGroupByIdDto;
+import com.live.chat_service.dto.UserGetDTO;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.GroupChat;
 import com.live.chat_service.model.GroupChatUser;
@@ -10,6 +12,7 @@ import com.live.chat_service.repository.GroupChatUserRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.service.GroupChatService;
 import jakarta.transaction.Transactional;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -26,10 +29,13 @@ public class GroupChatServiceImpl implements GroupChatService {
 
     private final GroupChatUserRepository groupChatUserRepository;
 
-    public GroupChatServiceImpl(GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository) {
+    private final ModelMapper modelMapper;
+
+    public GroupChatServiceImpl(GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository, ModelMapper modelMapper) {
         this.groupChatMessageRepository = groupChatMessageRepository;
         this.userRepository = userRepository;
         this.groupChatUserRepository = groupChatUserRepository;
+        this.modelMapper = modelMapper;
     }
 
     @Transactional
@@ -58,5 +64,26 @@ public class GroupChatServiceImpl implements GroupChatService {
         groupChatUserRepository.saveAll(groupChatUserList);
         createGroupDto.setId(groupChat.getId());
         return createGroupDto;
+    }
+
+    @Override
+    public GetGroupByIdDto groupById(Long id) {
+        GroupChat groupChat=groupChatMessageRepository.findByIdAndIsActiveTrue(id).orElseThrow
+                (()->new CustomValidationExceptions("Group not found with Id : "+id));
+        GetGroupByIdDto getGroupByIdDto=new GetGroupByIdDto();
+        modelMapper.map(groupChat, getGroupByIdDto);
+        List<GetGroupByIdDto.GroupUserDto> userGetDTOList;
+        List<GroupChatUser> groupChatUserList=groupChatUserRepository.findByIsActiveTrue(id);
+        userGetDTOList = groupChatUserList.stream()
+                .map(groupChatUser -> {
+                    GetGroupByIdDto.GroupUserDto userGetDTO = new GetGroupByIdDto.GroupUserDto();
+                    userGetDTO.setId(groupChatUser.getUser().getId());
+                    userGetDTO.setUserName(groupChatUser.getUser().getUserName());
+                    userGetDTO.setImage(groupChatUser.getUser().getImage());
+                    return userGetDTO;
+                })
+                .toList();
+        getGroupByIdDto.setUserGetDTOList(userGetDTOList);
+        return getGroupByIdDto;
     }
 }

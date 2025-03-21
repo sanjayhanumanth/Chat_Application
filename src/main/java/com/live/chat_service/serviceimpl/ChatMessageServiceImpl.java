@@ -15,14 +15,17 @@ import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.response.UserContextHolder;
 import com.live.chat_service.service.ChatMessageService;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class ChatMessageServiceImpl implements ChatMessageService {
@@ -35,14 +38,12 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     private final UserRepository userRepository;
 
     private final GroupChatUserRepository groupChatUserRepository;
-    private final ModelMapper modelMapper;
 
-    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository, GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository, ModelMapper modelMapper) {
+    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository, GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository) {
         this.chatMessageRepository = chatMessageRepository;
         this.groupChatMessageRepository = groupChatMessageRepository;
         this.userRepository = userRepository;
         this.groupChatUserRepository = groupChatUserRepository;
-        this.modelMapper = modelMapper;
     }
 
     @Override
@@ -50,7 +51,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         User user=userRepository.findByIdIsActive(messageDto.getReceiverId()).
                 orElseThrow(() -> new CustomValidationExceptions("Receiver not found with id: " + messageDto.getReceiverId()));
         User user1=userRepository.findByIdIsActive(messageDto.getSenderId()).
-                orElseThrow(() -> new CustomValidationExceptions("Sender not found with id: " + messageDto.getSenderId()));;
+                orElseThrow(() -> new CustomValidationExceptions("Sender not found with id: " + messageDto.getSenderId()));
         ChatMessage chatMessage=new ChatMessage();
         chatMessage.setReceiver(user);
         chatMessage.setSender(user1);
