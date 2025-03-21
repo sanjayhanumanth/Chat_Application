@@ -45,17 +45,6 @@ public class ChatController {
         return chatMessageService.getByIdMessages(messageId);
     }
 
-    @MessageMapping("/sendGroupMessage")
-    @SendTo("/topic/group/{groupId}")
-    public MessageDto sendGroupMessage(@Payload MessageDto messageDto) {
-        return chatMessageService.saveGroupMessage(messageDto);
-    }
-
-    @GetMapping("/group/{groupId}/messages")
-    public SuccessResponse<List<MessageDto>> getGroupChatMessages(@PathVariable Long groupId) {
-        return chatMessageService.getGroupChatMessages(groupId);
-    }
-
 
 }
 
