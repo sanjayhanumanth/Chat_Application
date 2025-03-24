@@ -10,8 +10,7 @@ import java.util.List;
 public interface GroupMessageRepository extends JpaRepository<GroupMessage, Long> {
 
     @Query("SELECT gm FROM GroupMessage gm " +
-            "WHERE gm.groupChatMessage.groupChat.id = :groupId " +
-            "ORDER BY gm.groupChatMessage.timestamp ASC")
+            "WHERE gm.groupChatMessage.id = :groupId ")
     List<GroupMessage> findByGroupChatMessage(@Param("groupId") Long groupId);
 
 }

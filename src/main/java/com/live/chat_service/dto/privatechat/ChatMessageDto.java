@@ -1,24 +1,24 @@
-package com.live.chat_service.dto;
+package com.live.chat_service.dto.privatechat;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.List;
+import java.time.LocalDateTime;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
-public class CreateGroupDto {
+public class ChatMessageDto {
 
     private Long id;
 
-    private String groupName;
-
     private Long senderId;
 
-    private List<Long> groupMemberIds;
+    private Long receiverId;
 
+    private String content;
+
+    private LocalDateTime timestamp;
 }

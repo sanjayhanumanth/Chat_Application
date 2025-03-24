@@ -1,4 +1,4 @@
-package com.live.chat_service.dto;
+package com.live.chat_service.dto.groupmessage;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -18,8 +18,6 @@ public class GetGroupByIdDto {
     private byte[] coverImage;
 
     private List<GroupUserDto> userGetDTOList;
-
-    private List<MessageDto> messageDtoList;
 
     @Getter
     @Setter
