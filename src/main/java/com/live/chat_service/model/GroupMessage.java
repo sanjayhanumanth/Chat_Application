@@ -12,26 +12,29 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Data
-@Table(name = "group_chat")
+@Table(name = "chat_group_message")
 @NoArgsConstructor
 @AllArgsConstructor
-public class GroupChatMessage {
+public class GroupMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "content")
-    private String content;
-
-    @Column(name = "timestamp")
-    private LocalDateTime timestamp;
+    @ManyToOne
+    @JoinColumn(name = "sender_id")
+    private User sender;
 
     @ManyToOne
-    @JoinColumn(name="group_id")
-    private GroupChat groupChat;
+    @JoinColumn(name = "receiver_id")
+    private User receiver;
+
+    @Column(name="read_flag")
+    private Boolean readFlag;
+
+    @ManyToOne
+    @JoinColumn(name = "group_chat_id")
+    private GroupChatMessage groupChatMessage;
 }
