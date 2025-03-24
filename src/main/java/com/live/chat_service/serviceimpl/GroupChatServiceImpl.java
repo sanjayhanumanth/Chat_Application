@@ -83,7 +83,7 @@ public class GroupChatServiceImpl implements GroupChatService {
 
     @Override
     public GetGroupByIdDto groupById(Long id) {
-        GroupChat groupChat=groupChatMessageRepository.findByIdAndIsActiveTrue(id).orElseThrow
+        GroupChat groupChat=groupChatRepository.findByIdAndIsActiveTrue(id).orElseThrow
                 (()->new CustomValidationExceptions("Group not found with Id : "+id));
         GetGroupByIdDto getGroupByIdDto=new GetGroupByIdDto();
         modelMapper.map(groupChat, getGroupByIdDto);
@@ -99,6 +99,7 @@ public class GroupChatServiceImpl implements GroupChatService {
                 })
                 .toList();
         getGroupByIdDto.setUserGetDTOList(userGetDTOList);
+        
         return getGroupByIdDto;
     }
 
