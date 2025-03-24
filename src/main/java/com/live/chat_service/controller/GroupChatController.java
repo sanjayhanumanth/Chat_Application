@@ -1,9 +1,9 @@
 package com.live.chat_service.controller;
 
-import com.live.chat_service.dto.groupmessage.CreateGroupDto;
-import com.live.chat_service.dto.groupmessage.GetGroupByIdDto;
-import com.live.chat_service.dto.groupmessage.GroupChatSaveDto;
-import com.live.chat_service.dto.groupmessage.MessageDto;
+import com.live.chat_service.dto.groupchat.CreateGroupDto;
+import com.live.chat_service.dto.groupchat.GetGroupByIdDto;
+import com.live.chat_service.dto.groupchat.GroupChatSaveDto;
+import com.live.chat_service.dto.groupchat.MessageDto;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.service.GroupChatService;
 import org.springframework.messaging.handler.annotation.MessageMapping;

@@ -1,4 +1,4 @@
-package com.live.chat_service.dto.groupmessage;
+package com.live.chat_service.dto.groupchat;
 
 import lombok.Getter;
 import lombok.Setter;
