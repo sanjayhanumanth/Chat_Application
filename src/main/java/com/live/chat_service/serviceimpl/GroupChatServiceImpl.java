@@ -4,15 +4,15 @@ import com.live.chat_service.dto.CreateGroupDto;
 import com.live.chat_service.dto.MessageDto;
 import com.live.chat_service.dto.GetGroupByIdDto;
 import com.live.chat_service.exception.CustomValidationExceptions;
-import com.live.chat_service.model.ChatMessage;
 import com.live.chat_service.model.GroupChat;
 import com.live.chat_service.model.GroupChatMessage;
 import com.live.chat_service.model.GroupChatUser;
+import com.live.chat_service.model.GroupMessage;
 import com.live.chat_service.model.User;
-import com.live.chat_service.repository.ChatMessageRepository;
 import com.live.chat_service.repository.GroupChatMessageRepository;
 import com.live.chat_service.repository.GroupChatRepository;
 import com.live.chat_service.repository.GroupChatUserRepository;
+import com.live.chat_service.repository.GroupMessageRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.service.GroupChatService;
@@ -39,16 +39,17 @@ public class GroupChatServiceImpl implements GroupChatService {
     private final GroupChatRepository groupChatRepository;
     private final GroupChatMessageRepository groupChatMessageRepository;
     private final UserRepository userRepository;
-
+    private final GroupMessageRepository groupMessageRepository;
     private final GroupChatUserRepository groupChatUserRepository;
 
     private final ModelMapper modelMapper;
 
 
-    public GroupChatServiceImpl(GroupChatRepository groupChatRepository, GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository,ModelMapper modelMapper) {
+    public GroupChatServiceImpl(GroupChatRepository groupChatRepository, GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository, GroupMessageRepository groupMessageRepository,ModelMapper modelMapper) {
         this.groupChatRepository = groupChatRepository;
         this.groupChatMessageRepository = groupChatMessageRepository;
         this.userRepository = userRepository;
+        this.groupMessageRepository = groupMessageRepository;
         this.groupChatUserRepository = groupChatUserRepository;
         this.modelMapper = modelMapper;
     }
@@ -99,57 +100,71 @@ public class GroupChatServiceImpl implements GroupChatService {
                 })
                 .toList();
         getGroupByIdDto.setUserGetDTOList(userGetDTOList);
-        
+
         return getGroupByIdDto;
     }
 
     @Override
     public MessageDto saveGroupMessage(MessageDto messageDto) {
-        Optional<GroupChat> group = groupChatRepository.findByIdAndIsActiveTrue(messageDto.getGroupId());
-        if(group.isEmpty()){
-            throw new CustomValidationExceptions("Group not found with id: " + messageDto.getGroupId());
-        }
+        GroupChat group = groupChatRepository.findByIdAndIsActiveTrue(messageDto.getGroupId())
+                .orElseThrow(() -> new CustomValidationExceptions("Group not found with id: " + messageDto.getGroupId()));
+
         User sender = userRepository.findByIdIsActive(messageDto.getSenderId())
                 .orElseThrow(() -> new CustomValidationExceptions("Sender not found with id: " + messageDto.getSenderId()));
 
+        GroupChatMessage groupChatMessage = new GroupChatMessage();
+        groupChatMessage.setGroupChat(group);
+        groupChatMessage.setTimestamp(LocalDateTime.now());
+        encryptMessage(messageDto.getContent(), groupChatMessage);
+        groupChatMessageRepository.save(groupChatMessage);
+
         List<GroupChatUser> groupChatUserList = groupChatUserRepository.findByIsActiveTrue(messageDto.getGroupId());
-        if(!groupChatUserList.isEmpty()) {
+
+        if (!groupChatUserList.isEmpty()) {
+            List<GroupMessage> groupMessages = new ArrayList<>();
+
             for (GroupChatUser member : groupChatUserList) {
-                GroupChatMessage chatMessage = new GroupChatMessage();
+                GroupMessage chatMessage = new GroupMessage();
                 chatMessage.setSender(sender);
                 chatMessage.setReceiver(member.getUser());
-                Optional<GroupChat> groupChatOptional = groupChatRepository.findByIdAndIsActiveTrue(messageDto.getGroupId());
-                groupChatOptional.ifPresent(chatMessage::setGroupChat);
-                chatMessage.setTimestamp(LocalDateTime.now());
                 chatMessage.setReadFlag(false);
-                encryptMessage(messageDto.getContent(), chatMessage);
-                groupChatMessageRepository.save(chatMessage);
+                chatMessage.setGroupChatMessage(groupChatMessage);
+                groupMessages.add(chatMessage);
             }
+
+            groupMessageRepository.saveAll(groupMessages);
         }
-        messageDto.setTimestamp(LocalDateTime.now());
+
+        messageDto.setTimestamp(groupChatMessage.getTimestamp());
         return messageDto;
     }
+
 
     @Override
     public SuccessResponse<List<MessageDto>> getGroupChatMessages(Long groupId) {
         SuccessResponse<List<MessageDto>> successResponse = new SuccessResponse<>();
 
-        List<GroupChatMessage> chatMessages = groupChatMessageRepository.findByGroupId(groupId);
+        GroupChat groupChat = groupChatRepository.findByIdAndIsActiveTrue(groupId)
+                .orElseThrow(() -> new CustomValidationExceptions("Group not found with id: " + groupId));
+
+        List<GroupMessage> groupMessages = groupMessageRepository.findByGroupChatMessage(groupChat.getId());
         List<MessageDto> messages = new ArrayList<>();
 
-        for (GroupChatMessage chat : chatMessages) {
+        for (GroupMessage chat : groupMessages) {
             MessageDto messageDto = new MessageDto();
             messageDto.setId(chat.getId());
             messageDto.setSenderId(chat.getSender().getId());
-            messageDto.setGroupId(chat.getGroupChat().getId());
-            messageDto.setTimestamp(chat.getTimestamp());
-            decryptMessage(chat, messageDto);
+            messageDto.setReceiverId(chat.getReceiver().getId());
+            messageDto.setGroupId(groupId);
+            messageDto.setTimestamp(chat.getGroupChatMessage().getTimestamp());
+            decryptMessage(chat.getGroupChatMessage(), messageDto);
             messages.add(messageDto);
         }
 
         successResponse.setData(messages);
         return successResponse;
     }
+
 
     private static void encryptMessage(String messageDto, GroupChatMessage chatMessage) {
         try {
