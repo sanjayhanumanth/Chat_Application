@@ -8,15 +8,12 @@ import com.live.chat_service.dto.UserListDTO;
 import com.live.chat_service.dto.UserOtpValidationDto;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.ChatMessage;
-import com.live.chat_service.model.GroupChatUser;
 import com.live.chat_service.model.Role;
 import com.live.chat_service.model.User;
-import com.live.chat_service.model.UserAccessLog;
 import com.live.chat_service.model.UserValidation;
 import com.live.chat_service.repository.ChatMessageRepository;
 import com.live.chat_service.repository.GroupChatUserRepository;
 import com.live.chat_service.repository.RoleRepository;
-import com.live.chat_service.repository.UserAccessLogRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.repository.UserValidationRepository;
 import com.live.chat_service.response.SuccessResponse;
@@ -25,24 +22,17 @@ import com.live.chat_service.service.UserService;
 import com.live.chat_service.util.CommonUtil;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,7 +50,6 @@ public class UserServiceImpl implements UserService {
 
     private final PasswordEncoder passwordEncoder;
 
-    private final UserAccessLogRepository userAccessLogRepository;
     private final RoleRepository roleRepository;
 
     private final UserValidationRepository userValidationRepository;
@@ -71,11 +60,10 @@ public class UserServiceImpl implements UserService {
 
     private final CommonUtil commonUtil;
 
-    public UserServiceImpl(GroupChatUserRepository groupChatUserRepository, UserRepository userRepository, PasswordEncoder passwordEncoder, UserAccessLogRepository userAccessLogRepository, RoleRepository roleRepository, UserValidationRepository userValidationRepository, JavaMailSender javaMailSender, ChatMessageRepository chatMessageRepository, CommonUtil commonUtil) {
+    public UserServiceImpl(GroupChatUserRepository groupChatUserRepository, UserRepository userRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserValidationRepository userValidationRepository, JavaMailSender javaMailSender, ChatMessageRepository chatMessageRepository, CommonUtil commonUtil) {
         this.groupChatUserRepository = groupChatUserRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.userAccessLogRepository = userAccessLogRepository;
         this.roleRepository = roleRepository;
         this.userValidationRepository = userValidationRepository;
         this.javaMailSender = javaMailSender;
@@ -129,12 +117,9 @@ public class UserServiceImpl implements UserService {
 
     public SuccessResponse<Object> getUser(Long id) {
         SuccessResponse<Object> successResponse = new SuccessResponse<>();
-        Long userId = UserContextHolder.getUserTokenDto().getId(); 
 
         User user = userRepository.findByIdIsActive(id)
                 .orElseThrow(() -> new CustomValidationExceptions("Invalid Id"));
-
-        updateUserAccessLog(userId, id);
 
         UserGetDTO dto = new UserGetDTO();
         dto.setId(user.getId());
@@ -152,28 +137,6 @@ public class UserServiceImpl implements UserService {
         successResponse.setStatusCode(200);
         return successResponse;
     }
-
-    @Transactional
-    public void updateUserAccessLog(Long userId, Long contactUserId) {
-        if (userId.equals(contactUserId)) {
-            return;
-        }
-
-        Optional<UserAccessLog> logOptional = userAccessLogRepository.findByUserIdAndContactUserId(userId, contactUserId);
-
-        if (logOptional.isPresent()) {
-            UserAccessLog log = logOptional.get();
-            log.setLastContacted(LocalDateTime.now());
-            userAccessLogRepository.save(log);
-        } else {
-            UserAccessLog newLog = new UserAccessLog();
-            newLog.setUser(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")));
-            newLog.setContactUser(userRepository.findById(contactUserId).orElseThrow(() -> new RuntimeException("Contact User not found")));
-            newLog.setLastContacted(LocalDateTime.now());
-            userAccessLogRepository.save(newLog);
-        }
-    }
-
 
     @Override
     public SuccessResponse<Object> editUser(UserEditDTO userEditDTO) {
