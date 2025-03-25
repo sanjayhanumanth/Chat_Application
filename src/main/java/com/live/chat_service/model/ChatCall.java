@@ -1,5 +1,13 @@
 package com.live.chat_service.model;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,17 +15,15 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "chat_call")
 @Data
-@Table(name = "chat_message")
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatMessage {
+public class ChatCall {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "content")
-    private String content;
 
     @ManyToOne
     @JoinColumn(name = "sender_id")
@@ -27,10 +33,10 @@ public class ChatMessage {
     @JoinColumn(name = "receiver_id")
     private User receiver;
 
+    @Column(name = "status")
+    private String status;
+
     @Column(name = "timestamp")
     private LocalDateTime timestamp;
-
-    @Column(name = "read_flag")
-    private Boolean readFlag;
-
 }
+
