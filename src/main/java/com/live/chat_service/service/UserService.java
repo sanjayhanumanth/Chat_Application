@@ -30,4 +30,6 @@ public interface UserService {
     SuccessResponse<Object> verifyOTP(UserOtpValidationDto userOtpValidationDto);
 
     SuccessResponse<Object> updatePassword(LoginDto loginDto);
+
+     SuccessResponse<Object> getOverallUser(String search);
 }

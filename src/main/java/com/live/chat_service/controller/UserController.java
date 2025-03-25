@@ -69,4 +69,10 @@ public class UserController {
         return service.updatePassword(loginDto);
     }
 
+    @GetMapping("/getOverallUser")
+    public SuccessResponse<Object> getOverallUser(String search)
+    {
+        return service.getOverallUser(search);
+    }
+
 }

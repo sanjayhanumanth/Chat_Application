@@ -22,6 +22,10 @@ import com.live.chat_service.service.UserService;
 import com.live.chat_service.util.CommonUtil;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,14 +36,8 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -162,28 +160,28 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public SuccessResponse<Object> forgotPassword(String email) {
-        SuccessResponse<Object> successResponse=new SuccessResponse<>();
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
         SecureRandom fieldRandom = new SecureRandom();
-        try{
-            if (!email.isEmpty()){
-                Optional<User> userOptional=userRepository.findByEmailId(email);
-                if (userOptional.isPresent()){
-                    User user=userOptional.get();
-                    Optional<UserValidation> userValidationOptional=userValidationRepository.findByEmail(email);
+        try {
+            if (!email.isEmpty()) {
+                Optional<User> userOptional = userRepository.findByEmailId(email);
+                if (userOptional.isPresent()) {
+                    User user = userOptional.get();
+                    Optional<UserValidation> userValidationOptional = userValidationRepository.findByEmail(email);
                     userValidationOptional.ifPresent(userValidation -> userValidationRepository.deleteById(userValidation.getId()));
                     Integer otp = fieldRandom.nextInt(9999);
                     UserValidation userValidation = new UserValidation();
                     userValidation.setEmail(user.getEmailId());
                     userValidation.setOtp(String.valueOf(otp));
                     userValidationRepository.save(userValidation);
-                    String success=sendOtpEmail(userOptional.get().getUserName(),userValidation.getEmail(),userValidation.getOtp());
+                    String success = sendOtpEmail(userOptional.get().getUserName(), userValidation.getEmail(), userValidation.getOtp());
                     if (success.equalsIgnoreCase(Constant.SUCCESS)) {
                         successResponse.setData(Constant.OTP_SEND);
                     }
                 } else {
                     throw new CustomValidationExceptions(Constant.INVALID_EMAIL);
                 }
-            }else {
+            } else {
                 throw new CustomValidationExceptions(Constant.ENTER_EMAIL);
             }
         } catch (Exception e) {
@@ -214,7 +212,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public SuccessResponse<Object> updatePassword(LoginDto loginDto) {
-        SuccessResponse<Object> successResponse=new SuccessResponse<>();
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
         if (!loginDto.getEmail().isEmpty() && !loginDto.getPassword().isEmpty()) {
             Optional<User> userOptional = userRepository.findByEmailId(loginDto.getEmail());
             if (userOptional.isPresent()) {
@@ -228,11 +226,37 @@ public class UserServiceImpl implements UserService {
             } else {
                 throw new CustomValidationExceptions(Constant.INVALID_EMAIL);
             }
-        }else {
+        } else {
             throw new CustomValidationExceptions(Constant.ENTER_EMAIL_PASSWORD);
         }
         return successResponse;
     }
+
+    public SuccessResponse<Object> getOverallUser(String search) {
+        SuccessResponse<Object> successResponse = new SuccessResponse<>();
+
+        List<User> userList = userRepository.findByIsActiveTrueOrderByDisplayNameAsc();
+
+        List<UserGetDTO> userGetDTOList = userList.stream()
+                //.sorted(Comparator.comparing(User::getDisplayName, Comparator.nullsFirst(String::compareTo))) // Nulls first, then sort
+                .map(user -> {
+            UserGetDTO dto = new UserGetDTO();
+            dto.setId(user.getId());
+            dto.setUserName(user.getUserName());
+            dto.setEmailId(user.getEmailId());
+            dto.setRoleId(user.getRole().getId());
+            dto.setImage(user.getImage());
+            dto.setPhoneNumber(user.getPhoneNumber());
+            dto.setTitle(user.getTitle());
+            dto.setDisplayName(user.getDisplayName());
+            dto.setStatus(user.getStatus());
+            return dto;
+        }).collect(Collectors.toList());
+
+        successResponse.setData(userGetDTOList);
+        return successResponse;
+    }
+
 
 
     public String sendOtpEmail(String userName, String email, String otp) {
@@ -242,9 +266,9 @@ public class UserServiceImpl implements UserService {
             mimeMessageHelper.setFrom(Constant.NO_REPLY_MAIL);
             mimeMessageHelper.setSubject(Constant.EMAIL_SUBJECT);
             mimeMessageHelper.setTo(email);
-            mimeMessageHelper.setText("<html><b style=\"font-size:1rem;\">Dear "+userName+"</b><br>"+
+            mimeMessageHelper.setText("<html><b style=\"font-size:1rem;\">Dear " + userName + "</b><br>" +
                     "We receive a request to reset your Coherent Chat Application Account. Please use the following One-Time Password(OTP) " +
-                    "to proceed with resetting your password:<br><b>"+otp+"</b><br>"+
+                    "to proceed with resetting your password:<br><b>" + otp + "</b><br>" +
                     "<p></p><p><b>Thanks & Regards,</b><p>Coherent Team</p><p>web : www.coherent.in</p><p style=margin-top:-50px> " +
                     "</p></html>", true);
             javaMailSender.send(mimeMessageHelper.getMimeMessage());
@@ -263,18 +287,18 @@ public class UserServiceImpl implements UserService {
         List<GroupChatProjection> groupUsers;
 
         if (search == null) {
-            List<ChatMessage> chatMessageList=chatMessageRepository.findFrequentlyContacted(userId);
+            List<ChatMessage> chatMessageList = chatMessageRepository.findFrequentlyContacted(userId);
 
 
-            Set<Long> values=new HashSet<>();
-            for (ChatMessage chatMessage:chatMessageList){
-                if (!Objects.equals(userId, chatMessage.getSender().getId()) && values.add(chatMessage.getSender().getId())){
-                    Optional<User> user=userRepository.findByIdIsActive(chatMessage.getSender().getId());
+            Set<Long> values = new HashSet<>();
+            for (ChatMessage chatMessage : chatMessageList) {
+                if (!Objects.equals(userId, chatMessage.getSender().getId()) && values.add(chatMessage.getSender().getId())) {
+                    Optional<User> user = userRepository.findByIdIsActive(chatMessage.getSender().getId());
                     if (user.isPresent()) {
                         userList.add(user.get());
                     }
-                }else if (!Objects.equals(userId, chatMessage.getReceiver().getId()) && values.add(chatMessage.getReceiver().getId())) {
-                    Optional<User> user=userRepository.findByIdIsActive(chatMessage.getReceiver().getId());
+                } else if (!Objects.equals(userId, chatMessage.getReceiver().getId()) && values.add(chatMessage.getReceiver().getId())) {
+                    Optional<User> user = userRepository.findByIdIsActive(chatMessage.getReceiver().getId());
                     if (user.isPresent()) {
                         userList.add(user.get());
                     }
@@ -289,10 +313,10 @@ public class UserServiceImpl implements UserService {
             userList = userRepository.findByName(search);
             groupUsers = groupChatUserRepository.findByGroupName(search, userId);
         }
-        List<GroupDTO> groupDTOList=new ArrayList<>();
-        List<UserListDTO> userDTOList=new ArrayList<>();
+        List<GroupDTO> groupDTOList = new ArrayList<>();
+        List<UserListDTO> userDTOList = new ArrayList<>();
         if (!groupUsers.isEmpty()) {
-            groupDTOList= groupUsers.stream().map(group -> {
+            groupDTOList = groupUsers.stream().map(group -> {
                 GroupDTO dto = new GroupDTO();
                 dto.setGroupId(group.getGroupId());
                 dto.setGroupName(group.getGroupName());
@@ -316,8 +340,8 @@ public class UserServiceImpl implements UserService {
 
                 Optional<ChatMessage> chatMessageOptional = chatMessageRepository.findLastMessage(user.getId(), userId);
                 chatMessageOptional.ifPresent(chatMessage -> {
-                    String decryptedMessage=commonUtil.decryptMessage(chatMessage.getContent());
-                        dto.setMessage(decryptedMessage);
+                    String decryptedMessage = commonUtil.decryptMessage(chatMessage.getContent());
+                    dto.setMessage(decryptedMessage);
                     dto.setLastMessageDateTime(String.valueOf(chatMessage.getTimestamp()));
                 });
 
@@ -333,7 +357,6 @@ public class UserServiceImpl implements UserService {
 
         return successResponse;
     }
-
 
 
     public User userLogin(LoginDto loginDto) {
