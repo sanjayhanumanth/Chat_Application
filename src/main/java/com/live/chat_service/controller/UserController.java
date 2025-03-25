@@ -70,7 +70,7 @@ public class UserController {
     }
 
     @GetMapping("/getOverallUser")
-    public SuccessResponse<Object> getOverallUser(String search)
+    public SuccessResponse<Object> getOverallUser(@RequestParam(required = false)String search)
     {
         return service.getOverallUser(search);
     }
