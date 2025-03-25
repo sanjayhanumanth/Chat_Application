@@ -48,4 +48,7 @@ public interface UserRepository extends JpaRepository<User,Long> {
     List<User> findByIsActiveTrueOrderByDisplayNameAsc();
 
     List<User> findByIsActiveTrue();
+
+
+    List<User> findByUserNameIgnoreCaseContainingOrDisplayNameIgnoreCaseContaining(String search, String search1);
 }

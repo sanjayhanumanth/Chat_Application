@@ -234,24 +234,29 @@ public class UserServiceImpl implements UserService {
 
     public SuccessResponse<Object> getOverallUser(String search) {
         SuccessResponse<Object> successResponse = new SuccessResponse<>();
+        List<User> userList;
+        if (search == null) {
+            userList = userRepository.findByIsActiveTrueOrderByDisplayNameAsc();
+        } else {
+            userList = userRepository.findByUserNameIgnoreCaseContainingOrDisplayNameIgnoreCaseContaining(search, search);
+        }
 
-        List<User> userList = userRepository.findByIsActiveTrueOrderByDisplayNameAsc();
 
         List<UserGetDTO> userGetDTOList = userList.stream()
                 //.sorted(Comparator.comparing(User::getDisplayName, Comparator.nullsFirst(String::compareTo))) // Nulls first, then sort
                 .map(user -> {
-            UserGetDTO dto = new UserGetDTO();
-            dto.setId(user.getId());
-            dto.setUserName(user.getUserName());
-            dto.setEmailId(user.getEmailId());
-            dto.setRoleId(user.getRole().getId());
-            dto.setImage(user.getImage());
-            dto.setPhoneNumber(user.getPhoneNumber());
-            dto.setTitle(user.getTitle());
-            dto.setDisplayName(user.getDisplayName());
-            dto.setStatus(user.getStatus());
-            return dto;
-        }).collect(Collectors.toList());
+                    UserGetDTO dto = new UserGetDTO();
+                    dto.setId(user.getId());
+                    dto.setUserName(user.getUserName());
+                    dto.setEmailId(user.getEmailId());
+                    dto.setRoleId(user.getRole().getId());
+                    dto.setImage(user.getImage());
+                    dto.setPhoneNumber(user.getPhoneNumber());
+                    dto.setTitle(user.getTitle());
+                    dto.setDisplayName(user.getDisplayName());
+                    dto.setStatus(user.getStatus());
+                    return dto;
+                }).collect(Collectors.toList());
         successResponse.setData(userGetDTOList);
         return successResponse;
     }
