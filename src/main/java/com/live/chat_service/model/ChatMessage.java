@@ -30,10 +30,7 @@ public class ChatMessage {
     @Column(name = "timestamp")
     private LocalDateTime timestamp;
 
-    @Column(name="read_flag")
+    @Column(name = "read_flag")
     private Boolean readFlag;
 
-    @ManyToOne
-    @JoinColumn(name="group_id")
-    private GroupChat groupChat;
 }
