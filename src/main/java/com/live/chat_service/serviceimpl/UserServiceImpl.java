@@ -252,12 +252,9 @@ public class UserServiceImpl implements UserService {
             dto.setStatus(user.getStatus());
             return dto;
         }).collect(Collectors.toList());
-
         successResponse.setData(userGetDTOList);
         return successResponse;
     }
-
-
 
     public String sendOtpEmail(String userName, String email, String otp) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
