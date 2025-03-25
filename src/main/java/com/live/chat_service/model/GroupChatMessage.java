@@ -32,6 +32,10 @@ public class GroupChatMessage {
     private LocalDateTime timestamp;
 
     @ManyToOne
+    @JoinColumn(name = "sender_id")
+    private User sender;
+
+    @ManyToOne
     @JoinColumn(name="group_id")
     private GroupChat groupChat;
 }

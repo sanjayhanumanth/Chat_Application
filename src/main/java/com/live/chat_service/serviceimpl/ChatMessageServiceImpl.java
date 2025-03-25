@@ -1,12 +1,14 @@
 package com.live.chat_service.serviceimpl;
 
 import com.live.chat_service.constant.Constant;
+import com.live.chat_service.dto.privatechat.ChatMessageDto;
 import com.live.chat_service.dto.EditMessageDTO;
-import com.live.chat_service.dto.MessageDto;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.ChatMessage;
 import com.live.chat_service.model.User;
 import com.live.chat_service.repository.ChatMessageRepository;
+import com.live.chat_service.repository.GroupChatMessageRepository;
+import com.live.chat_service.repository.GroupChatUserRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.response.UserContextHolder;
@@ -17,7 +19,11 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class ChatMessageServiceImpl implements ChatMessageService {
@@ -28,18 +34,20 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 
     private final UserRepository userRepository;
 
+    private final GroupChatUserRepository groupChatUserRepository;
 
-    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository, UserRepository userRepository) {
+    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository, GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository) {
         this.chatMessageRepository = chatMessageRepository;
         this.userRepository = userRepository;
+        this.groupChatUserRepository = groupChatUserRepository;
     }
 
     @Override
-    public MessageDto saveMessage(MessageDto messageDto) {
+    public ChatMessageDto saveMessage(ChatMessageDto messageDto) {
         User user=userRepository.findByIdIsActive(messageDto.getReceiverId()).
                 orElseThrow(() -> new CustomValidationExceptions("Receiver not found with id: " + messageDto.getReceiverId()));
         User user1=userRepository.findByIdIsActive(messageDto.getSenderId()).
-                orElseThrow(() -> new CustomValidationExceptions("Sender not found with id: " + messageDto.getSenderId()));;
+                orElseThrow(() -> new CustomValidationExceptions("Sender not found with id: " + messageDto.getSenderId()));
         ChatMessage chatMessage=new ChatMessage();
         chatMessage.setReceiver(user);
         chatMessage.setSender(user1);
@@ -54,12 +62,12 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     }
 
     @Override
-    public SuccessResponse<List<MessageDto>> getChatMessages(Long senderId, Long receiverId) {
-        SuccessResponse<List<MessageDto>> successResponse = new SuccessResponse<>();
+    public SuccessResponse<List<ChatMessageDto>> getChatMessages(Long senderId, Long receiverId) {
+        SuccessResponse<List<ChatMessageDto>> successResponse = new SuccessResponse<>();
         List<ChatMessage> chatMessages = chatMessageRepository.findBySenderReceiverId(senderId, receiverId);
-       List<MessageDto> messageDtos = new ArrayList<>();
+       List<ChatMessageDto> messageDtos = new ArrayList<>();
         for (ChatMessage chat : chatMessages){
-            MessageDto messageDto = new MessageDto();
+            ChatMessageDto messageDto = new ChatMessageDto();
             messageDto.setId(chat.getId());
             messageDto.setSenderId(chat.getSender().getId());
             messageDto.setReceiverId(chat.getReceiver().getId());
@@ -120,7 +128,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     @Override
     public SuccessResponse<Object> getByIdMessages(Long messageId) {
         SuccessResponse<Object> successResponse = new SuccessResponse<>();
-        MessageDto messageDto = new MessageDto();
+        ChatMessageDto messageDto = new ChatMessageDto();
         Optional<ChatMessage> message = chatMessageRepository.findById(messageId);
         if(message.isPresent()){
             ChatMessage chatMessage = message.get();
@@ -135,7 +143,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     }
 
 
-    private static void decryptMessage(ChatMessage chatMessage, MessageDto messageDto) {
+    private static void decryptMessage(ChatMessage chatMessage, ChatMessageDto messageDto) {
         try {
             Cipher cipher = Cipher.getInstance(ALGORITHM);
             SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);

@@ -1,7 +1,9 @@
 package com.live.chat_service.controller;
 
-import com.live.chat_service.dto.CreateGroupDto;
-import com.live.chat_service.dto.MessageDto;
+import com.live.chat_service.dto.groupchat.CreateGroupDto;
+import com.live.chat_service.dto.groupchat.GetGroupByIdDto;
+import com.live.chat_service.dto.groupchat.GroupChatSaveDto;
+import com.live.chat_service.dto.groupchat.MessageDto;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.service.GroupChatService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -10,6 +12,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -31,9 +34,14 @@ public class GroupChatController {
         return groupChatService.createGroup(createGroupDto);
     }
 
+    @GetMapping("/groupById")
+    public GetGroupByIdDto groupById(@RequestParam Long id) {
+        return groupChatService.groupById(id);
+    }
+
     @MessageMapping("/sendGroupMessage")
     @SendTo("/topic/group/{groupId}")
-    public MessageDto sendGroupMessage(@Payload MessageDto messageDto) {
+    public GroupChatSaveDto sendGroupMessage(@Payload GroupChatSaveDto messageDto) {
         return groupChatService.saveGroupMessage(messageDto);
     }
 
