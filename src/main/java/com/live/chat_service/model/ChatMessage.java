@@ -33,7 +33,4 @@ public class ChatMessage {
     @Column(name="read_flag")
     private Boolean readFlag;
 
-    @ManyToOne
-    @JoinColumn(name="group_id")
-    private GroupChat groupChat;
 }

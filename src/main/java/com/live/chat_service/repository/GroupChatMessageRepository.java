@@ -9,8 +9,6 @@ import java.util.List;
 
 @Repository
 public interface GroupChatMessageRepository extends JpaRepository<GroupChatMessage, Long> {
-    @Query(value = "SELECT c from ChatMessage c where c.groupChat.id = :groupId ORDER BY c.timestamp ASC")
-    List<GroupChatMessage> findByGroupId(Long groupId);
 
     @Query("SELECT gm FROM GroupChatMessage gm " +
             "WHERE gm.groupChat.id = :groupId " +

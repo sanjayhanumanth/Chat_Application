@@ -5,7 +5,6 @@ import com.live.chat_service.dto.LoginDto;
 import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.User;
 import com.live.chat_service.serviceimpl.UserServiceImpl;
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,7 +18,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 @Component
 public class JwtUtil {

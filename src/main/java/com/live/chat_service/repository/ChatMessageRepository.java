@@ -3,6 +3,7 @@ package com.live.chat_service.repository;
 import com.live.chat_service.model.ChatMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,7 +23,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Query("SELECT m FROM ChatMessage m " +
             "WHERE ((m.sender.id = :senderId AND m.receiver.id = :receiverId) " +
             "OR (m.sender.id = :receiverId AND m.receiver.id = :senderId)) " +
-            "AND m.groupChat.id IS NULL " +
             "ORDER BY m.timestamp ASC")
     List<ChatMessage> findBySenderReceiverId(Long senderId, Long receiverId);
 
@@ -36,8 +36,14 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     Long countBySenderIdAndReceiverIdAndReadFlagFalse(Long senderId, Long receiverId);
 
 
-    @Query(value = "SELECT c from ChatMessage c where c.receiver.id=:receiverId and c.sender.id=:senderId " +
+    @Query(value = "SELECT c from ChatMessage c where (c.receiver.id=:receiverId and c.sender.id=:senderId) " +
+            "OR (c.receiver.id=:senderId and c.sender.id=:receiverId) " +
             "order by id desc limit 1")
     Optional<ChatMessage> findLastMessage(Long senderId, Long receiverId);
+
+
+    @Query("SELECT c FROM ChatMessage c WHERE c.sender.id = :userId " +
+            "OR c.receiver.id = :userId ORDER BY c.timestamp DESC ")
+    List<ChatMessage> findFrequentlyContacted(@Param("userId") Long userId);
 
 }

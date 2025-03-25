@@ -22,6 +22,7 @@ import com.live.chat_service.repository.UserValidationRepository;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.response.UserContextHolder;
 import com.live.chat_service.service.UserService;
+import com.live.chat_service.util.CommonUtil;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
@@ -43,17 +44,15 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-
 
 @Service
 public class UserServiceImpl implements UserService {
-    private static final String ALGORITHM = "AES";
-    private static final byte[] SECRET_KEY = "1234567890123456".getBytes();
 
     private final GroupChatUserRepository groupChatUserRepository;
 
@@ -70,7 +69,9 @@ public class UserServiceImpl implements UserService {
 
     private final ChatMessageRepository chatMessageRepository;
 
-    public UserServiceImpl(GroupChatUserRepository groupChatUserRepository, UserRepository userRepository, PasswordEncoder passwordEncoder, UserAccessLogRepository userAccessLogRepository, RoleRepository roleRepository, UserValidationRepository userValidationRepository, JavaMailSender javaMailSender, ChatMessageRepository chatMessageRepository) {
+    private final CommonUtil commonUtil;
+
+    public UserServiceImpl(GroupChatUserRepository groupChatUserRepository, UserRepository userRepository, PasswordEncoder passwordEncoder, UserAccessLogRepository userAccessLogRepository, RoleRepository roleRepository, UserValidationRepository userValidationRepository, JavaMailSender javaMailSender, ChatMessageRepository chatMessageRepository, CommonUtil commonUtil) {
         this.groupChatUserRepository = groupChatUserRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -79,6 +80,7 @@ public class UserServiceImpl implements UserService {
         this.userValidationRepository = userValidationRepository;
         this.javaMailSender = javaMailSender;
         this.chatMessageRepository = chatMessageRepository;
+        this.commonUtil = commonUtil;
     }
 
     @Override
@@ -294,20 +296,26 @@ public class UserServiceImpl implements UserService {
     public SuccessResponse<Map<String, Object>> getUserList(String search) {
         SuccessResponse<Map<String, Object>> successResponse = new SuccessResponse<>();
         Long userId = UserContextHolder.getUserTokenDto().getId();
-        List<User> userList;
+        List<User> userList = new ArrayList<>();
         List<GroupChatProjection> groupUsers;
 
         if (search == null) {
-            Pageable pageable = PageRequest.of(0, 5);
-            userList = userAccessLogRepository.findFrequentlyContactedUsers(userId, pageable);
+            List<ChatMessage> chatMessageList=chatMessageRepository.findFrequentlyContacted(userId);
 
-            if (userList.isEmpty()) {
-                userList = userRepository.findDefaultUsers(userId, pageable);
-            } else {
-                int remaining = 5 - userList.size();
-                Pageable additionalPageable = PageRequest.of(0, remaining);
-                List<User> defaultUsers = userRepository.findDefaultUsers(userId, additionalPageable);
-                userList.addAll(defaultUsers);
+
+            Set<Long> values=new HashSet<>();
+            for (ChatMessage chatMessage:chatMessageList){
+                if (!Objects.equals(userId, chatMessage.getSender().getId()) && values.add(chatMessage.getSender().getId())){
+                    Optional<User> user=userRepository.findByIdIsActive(chatMessage.getSender().getId());
+                    if (user.isPresent()) {
+                        userList.add(user.get());
+                    }
+                }else if (!Objects.equals(userId, chatMessage.getReceiver().getId()) && values.add(chatMessage.getReceiver().getId())) {
+                    Optional<User> user=userRepository.findByIdIsActive(chatMessage.getReceiver().getId());
+                    if (user.isPresent()) {
+                        userList.add(user.get());
+                    }
+                }
             }
 
             groupUsers = groupChatUserRepository.findUserGroup(userId);
@@ -318,45 +326,41 @@ public class UserServiceImpl implements UserService {
             userList = userRepository.findByName(search);
             groupUsers = groupChatUserRepository.findByGroupName(search, userId);
         }
+        List<GroupDTO> groupDTOList=new ArrayList<>();
+        List<UserListDTO> userDTOList=new ArrayList<>();
+        if (!groupUsers.isEmpty()) {
+            groupDTOList= groupUsers.stream().map(group -> {
+                GroupDTO dto = new GroupDTO();
+                dto.setGroupId(group.getGroupId());
+                dto.setGroupName(group.getGroupName());
+                return dto;
+            }).toList();
+        }
+        if (!userList.isEmpty()) {
+            userDTOList = userList.stream().map(user -> {
+                UserListDTO dto = new UserListDTO();
+                dto.setId(user.getId());
+                dto.setName(user.getUserName());
+                dto.setEmail(user.getEmailId());
+                dto.setRoleId(user.getRole().getId());
+                dto.setStatus(user.getStatus());
+                dto.setDisplayName(user.getDisplayName());
+                dto.setPhoneNumber(user.getPhoneNumber());
+                dto.setTitle(user.getTitle());
+                dto.setImage(user.getImage());
+                Long unreadCount = chatMessageRepository.countBySenderIdAndReceiverIdAndReadFlagFalse(user.getId(), userId);
+                dto.setCount(unreadCount);
 
-        List<GroupDTO> groupDTOList = groupUsers.stream().map(group -> {
-            GroupDTO dto = new GroupDTO();
-            dto.setGroupId(group.getGroupId());
-            dto.setGroupName(group.getGroupName());
-            return dto;
-        }).collect(Collectors.toList());
+                Optional<ChatMessage> chatMessageOptional = chatMessageRepository.findLastMessage(user.getId(), userId);
+                chatMessageOptional.ifPresent(chatMessage -> {
+                    String decryptedMessage=commonUtil.decryptMessage(chatMessage.getContent());
+                        dto.setMessage(decryptedMessage);
+                    dto.setLastMessageDateTime(String.valueOf(chatMessage.getTimestamp()));
+                });
 
-        List<UserListDTO> userDTOList = userList.stream().map(user -> {
-            UserListDTO dto = new UserListDTO();
-            dto.setId(user.getId());
-            dto.setName(user.getUserName());
-            dto.setEmail(user.getEmailId());
-            dto.setRoleId(user.getRole().getId());
-            dto.setStatus(user.getStatus());
-            dto.setDisplayName(user.getDisplayName());
-            dto.setPhoneNumber(user.getPhoneNumber());
-            dto.setTitle(user.getTitle());
-
-            Long unreadCount = chatMessageRepository.countBySenderIdAndReceiverIdAndReadFlagFalse(dto.getId(), userId);
-            dto.setCount(unreadCount);
-
-            Optional<ChatMessage> chatMessageOptional = chatMessageRepository.findLastMessage(dto.getId(), userId);
-            chatMessageOptional.ifPresent(chatMessage -> {
-                try {
-                    Cipher cipher = Cipher.getInstance(ALGORITHM);
-                    SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
-                    cipher.init(Cipher.DECRYPT_MODE, secretKey);
-                    byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(chatMessage.getContent()));
-                    dto.setMessage(new String(decryptedData));
-                } catch (Exception e) {
-                    throw new CustomValidationExceptions("Error while decrypting");
-                }
-                dto.setLastMessageDateTime(String.valueOf(chatMessage.getTimestamp()));
-            });
-
-            return dto;
-        }).collect(Collectors.toList());
-
+                return dto;
+            }).toList();
+        }
         Map<String, Object> responseData = new HashMap<>();
         responseData.put("userList", userDTOList);
         responseData.put("groupList", groupDTOList);

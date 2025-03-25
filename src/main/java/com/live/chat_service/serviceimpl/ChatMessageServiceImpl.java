@@ -7,39 +7,31 @@ import com.live.chat_service.exception.CustomValidationExceptions;
 import com.live.chat_service.model.ChatMessage;
 import com.live.chat_service.model.User;
 import com.live.chat_service.repository.ChatMessageRepository;
-import com.live.chat_service.repository.GroupChatMessageRepository;
-import com.live.chat_service.repository.GroupChatUserRepository;
+
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.response.UserContextHolder;
 import com.live.chat_service.service.ChatMessageService;
+import com.live.chat_service.util.CommonUtil;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 @Service
 public class ChatMessageServiceImpl implements ChatMessageService {
-    private static final String ALGORITHM = "AES";
-    private static final byte[] SECRET_KEY = "1234567890123456".getBytes();
 
     private final ChatMessageRepository chatMessageRepository;
-
     private final UserRepository userRepository;
+    private final CommonUtil commonUtil;
 
-    private final GroupChatUserRepository groupChatUserRepository;
-
-    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository, GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository) {
+    public ChatMessageServiceImpl(ChatMessageRepository chatMessageRepository,  UserRepository userRepository, CommonUtil commonUtil) {
         this.chatMessageRepository = chatMessageRepository;
         this.userRepository = userRepository;
-        this.groupChatUserRepository = groupChatUserRepository;
+        this.commonUtil = commonUtil;
     }
 
     @Override
@@ -53,7 +45,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         chatMessage.setSender(user1);
         chatMessage.setTimestamp(LocalDateTime.now());
         chatMessage.setReadFlag(false);
-        encryptMessage(messageDto.getContent(), chatMessage);
+        chatMessage.setContent(commonUtil.encryptMessage(messageDto.getContent()));
         chatMessageRepository.save(chatMessage);
 
         messageDto.setId(chatMessage.getId());
@@ -72,7 +64,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             messageDto.setSenderId(chat.getSender().getId());
             messageDto.setReceiverId(chat.getReceiver().getId());
             messageDto.setTimestamp(chat.getTimestamp());
-            decryptMessage(chat, messageDto);
+            messageDto.setContent(commonUtil.decryptMessage(chat.getContent()));
             messageDtos.add(messageDto);
         }
         successResponse.setData(messageDtos);
@@ -90,7 +82,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             if (chatMessage.getTimestamp().isBefore(tenMinutesAgo)) {
                 throw new CustomValidationExceptions(Constant.EDITED_TIME_EXCEEDED);
             }
-            encryptMessage(editMessageDTO.getContent(), chatMessage);
+            chatMessage.setContent(commonUtil.encryptMessage(editMessageDTO.getContent()));
             chatMessageRepository.save(chatMessage);
         }
         else {
@@ -98,19 +90,6 @@ public class ChatMessageServiceImpl implements ChatMessageService {
         }
         successResponse.setStatusMessage(Constant.MESSAGE_UPDATED);
         return successResponse;
-    }
-
-    private static void encryptMessage(String messageDto, ChatMessage chatMessage) {
-        try {
-            Cipher cipher = Cipher.getInstance(ALGORITHM);
-            SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-            byte[] encryptedData = cipher.doFinal(messageDto.getBytes());
-            String encryptedContent = Base64.getEncoder().encodeToString(encryptedData);
-            chatMessage.setContent(encryptedContent);
-        } catch (Exception e) {
-            throw new CustomValidationExceptions("Error while encrypting");
-        }
     }
 
     @Override
@@ -136,23 +115,11 @@ public class ChatMessageServiceImpl implements ChatMessageService {
             messageDto.setSenderId(chatMessage.getSender().getId());
             messageDto.setReceiverId(chatMessage.getReceiver().getId());
             messageDto.setTimestamp(chatMessage.getTimestamp());
-            decryptMessage(chatMessage, messageDto);
+            messageDto.setContent(commonUtil.decryptMessage(chatMessage.getContent()));
         }
         successResponse.setData(messageDto);
         return successResponse;
     }
 
-
-    private static void decryptMessage(ChatMessage chatMessage, ChatMessageDto messageDto) {
-        try {
-            Cipher cipher = Cipher.getInstance(ALGORITHM);
-            SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(chatMessage.getContent()));
-            messageDto.setContent(new String(decryptedData));
-        } catch (Exception e) {
-            throw new CustomValidationExceptions("Error while decrypting");
-        }
-    }
 
 }

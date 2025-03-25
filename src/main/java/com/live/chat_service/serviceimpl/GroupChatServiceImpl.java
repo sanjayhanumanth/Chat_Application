@@ -17,41 +17,38 @@ import com.live.chat_service.repository.GroupMessageRepository;
 import com.live.chat_service.repository.UserRepository;
 import com.live.chat_service.response.SuccessResponse;
 import com.live.chat_service.service.GroupChatService;
+import com.live.chat_service.util.CommonUtil;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 
 @Service
 public class GroupChatServiceImpl implements GroupChatService {
 
-    private static final String ALGORITHM = "AES";
-    private static final byte[] SECRET_KEY = "1234567890123456".getBytes();
     private final GroupChatRepository groupChatRepository;
     private final GroupChatMessageRepository groupChatMessageRepository;
     private final UserRepository userRepository;
     private final GroupMessageRepository groupMessageRepository;
     private final GroupChatUserRepository groupChatUserRepository;
+    private final CommonUtil commonUtil;
 
     private final ModelMapper modelMapper;
 
 
-    public GroupChatServiceImpl(GroupChatRepository groupChatRepository, GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository, GroupMessageRepository groupMessageRepository,ModelMapper modelMapper) {
+    public GroupChatServiceImpl(GroupChatRepository groupChatRepository, GroupChatMessageRepository groupChatMessageRepository, UserRepository userRepository, GroupChatUserRepository groupChatUserRepository, GroupMessageRepository groupMessageRepository, CommonUtil commonUtil, ModelMapper modelMapper) {
         this.groupChatRepository = groupChatRepository;
         this.groupChatMessageRepository = groupChatMessageRepository;
         this.userRepository = userRepository;
         this.groupMessageRepository = groupMessageRepository;
         this.groupChatUserRepository = groupChatUserRepository;
+        this.commonUtil = commonUtil;
         this.modelMapper = modelMapper;
     }
 
@@ -117,7 +114,7 @@ public class GroupChatServiceImpl implements GroupChatService {
         groupChatMessage.setGroupChat(group);
         groupChatMessage.setSender(sender);
         groupChatMessage.setTimestamp(LocalDateTime.now());
-        encryptMessage(messageDto.getContent(), groupChatMessage);
+        groupChatMessage.setContent(commonUtil.encryptMessage(messageDto.getContent()));
         groupChatMessageRepository.save(groupChatMessage);
 
         List<GroupChatUser> groupChatUserList = groupChatUserRepository.findByIsActiveTrue(messageDto.getGroupChatId());
@@ -160,7 +157,7 @@ public class GroupChatServiceImpl implements GroupChatService {
                 messageDto.setReceivers(membersDtoList);
                 messageDto.setGroupChatId(groupId);
                 messageDto.setTimestamp(chat.getTimestamp());
-                decryptMessage(chat, messageDto);
+                messageDto.setContent(commonUtil.decryptMessage(chat.getContent()));
                 messages.add(messageDto);
             }
         }
@@ -168,29 +165,4 @@ public class GroupChatServiceImpl implements GroupChatService {
         return successResponse;
     }
 
-
-    private static void encryptMessage(String messageDto, GroupChatMessage chatMessage) {
-        try {
-            Cipher cipher = Cipher.getInstance(ALGORITHM);
-            SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-            byte[] encryptedData = cipher.doFinal(messageDto.getBytes());
-            String encryptedContent = Base64.getEncoder().encodeToString(encryptedData);
-            chatMessage.setContent(encryptedContent);
-        } catch (Exception e) {
-            throw new CustomValidationExceptions("Error while encrypting");
-        }
-    }
-
-    private static void decryptMessage(GroupChatMessage chatMessage, MessageDto messageDto) {
-        try {
-            Cipher cipher = Cipher.getInstance(ALGORITHM);
-            SecretKey secretKey = new SecretKeySpec(SECRET_KEY, ALGORITHM);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(chatMessage.getContent()));
-            messageDto.setContent(new String(decryptedData));
-        } catch (Exception e) {
-            throw new CustomValidationExceptions("Error while decrypting");
-        }
-    }
 }

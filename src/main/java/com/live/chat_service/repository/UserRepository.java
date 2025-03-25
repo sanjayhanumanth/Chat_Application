@@ -7,8 +7,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Repository
 public interface UserRepository extends JpaRepository<User,Long> {
@@ -34,5 +37,7 @@ public interface UserRepository extends JpaRepository<User,Long> {
     @Query("SELECT u FROM User u WHERE u.isActive = true AND u.id <> :userId ORDER BY u.id DESC")
     List<User> findDefaultUsers(@Param("userId") Long userId, Pageable pageable);
 
+    @Query("SELECT u FROM User u WHERE u.isActive = true AND u.id IN :userLists")
+    List<User> findAllIsActiveTrue(List<Long> userLists, Pageable pageable);
 
 }
